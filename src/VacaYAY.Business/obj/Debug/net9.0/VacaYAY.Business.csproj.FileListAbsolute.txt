@@ -10,3 +10,9 @@ C:\Projects\VacaYAY2\src\VacaYAY.Business\obj\Debug\net9.0\VacaYAY.Business.dll
 C:\Projects\VacaYAY2\src\VacaYAY.Business\obj\Debug\net9.0\refint\VacaYAY.Business.dll
 C:\Projects\VacaYAY2\src\VacaYAY.Business\obj\Debug\net9.0\VacaYAY.Business.pdb
 C:\Projects\VacaYAY2\src\VacaYAY.Business\obj\Debug\net9.0\ref\VacaYAY.Business.dll
+C:\Projects\VacaYAY2\src\VacaYAY.Business\obj\Debug\net9.0\VacaYAY.Business.sourcelink.json
+C:\Projects\VacaYAY2\src\VacaYAY.Business\bin\Debug\net9.0\VacaYAY.Data.dll
+C:\Projects\VacaYAY2\src\VacaYAY.Business\bin\Debug\net9.0\VacaYAY.Domain.dll
+C:\Projects\VacaYAY2\src\VacaYAY.Business\bin\Debug\net9.0\VacaYAY.Data.pdb
+C:\Projects\VacaYAY2\src\VacaYAY.Business\bin\Debug\net9.0\VacaYAY.Domain.pdb
+C:\Projects\VacaYAY2\src\VacaYAY.Business\obj\Debug\net9.0\VacaYAY..C1E37247.Up2Date

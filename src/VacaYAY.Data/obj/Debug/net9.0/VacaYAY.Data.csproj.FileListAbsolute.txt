@@ -11,3 +11,8 @@ C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\refint\VacaYAY.Data.dll
 C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\VacaYAY.Data.pdb
 C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\VacaYAY.Data.genruntimeconfig.cache
 C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\ref\VacaYAY.Data.dll
+C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\VacaYAY.Data.csproj.AssemblyReference.cache
+C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\VacaYAY.Data.sourcelink.json
+C:\Projects\VacaYAY2\src\VacaYAY.Data\bin\Debug\net9.0\VacaYAY.Domain.dll
+C:\Projects\VacaYAY2\src\VacaYAY.Data\bin\Debug\net9.0\VacaYAY.Domain.pdb
+C:\Projects\VacaYAY2\src\VacaYAY.Data\obj\Debug\net9.0\VacaYAY..8E0B3843.Up2Date

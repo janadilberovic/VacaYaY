@@ -11,4 +11,9 @@
     <PackageReference Include="Mapster" Version="10.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\VacaYAY.Data\VacaYAY.Data.csproj" />
+    <ProjectReference Include="..\VacaYAY.Domain\VacaYAY.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
