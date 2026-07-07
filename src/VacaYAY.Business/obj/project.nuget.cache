@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "YJ+C20K2ZXQ=",
+  "success": true,
+  "projectFilePath": "C:\\Projects\\VacaYAY2\\src\\VacaYAY.Business\\VacaYAY.Business.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Jana\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
+    "C:\\Users\\Jana\\.nuget\\packages\\mapster\\10.0.10\\mapster.10.0.10.nupkg.sha512",
+    "C:\\Users\\Jana\\.nuget\\packages\\mapster.core\\10.0.10\\mapster.core.10.0.10.nupkg.sha512"
+  ],
+  "logs": []
+}
