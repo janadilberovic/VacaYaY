@@ -1,5 +1,6 @@
 # PreToolUse hook (matcher: Bash).
-# Blocks EF migration commands — migrations are owned outside Claude in this project.
+# Blocks EF commands that mutate the database — applying/dropping is owned outside Claude.
+# Note: `dotnet ef migrations add/remove` is intentionally NOT blocked (allowed).
 # Reads the tool-call JSON from stdin; exit 2 blocks the call (stderr is shown to Claude).
 
 $ErrorActionPreference = 'Stop'
@@ -17,13 +18,11 @@ try {
 $command = [string]$payload.tool_input.command
 if ([string]::IsNullOrWhiteSpace($command)) { exit 0 }
 
-# Normalize whitespace so "dotnet   ef  migrations   add" still matches.
+# Normalize whitespace so "dotnet   ef  database   update" still matches.
 $normalized = ($command -replace '\s+', ' ').Trim()
 
-# Match `dotnet ef ...` and the `dotnet-ef ...` variant.
+# Match `dotnet ef ...` and the `dotnet-ef ...` variant. Only database-mutating commands.
 $patterns = @(
-    'dotnet[- ]ef migrations add',
-    'dotnet[- ]ef migrations remove',
     'dotnet[- ]ef database update',
     'dotnet[- ]ef database drop'
 )
@@ -31,8 +30,8 @@ $patterns = @(
 foreach ($p in $patterns) {
     if ($normalized -imatch $p) {
         [Console]::Error.WriteLine(
-            "Blocked: EF migrations are owned outside Claude in this project (see CLAUDE.md Guardrails). " +
-            "Edit the EF model only; a human will generate/apply the migration.")
+            "Blocked: applying/dropping the database is owned outside Claude in this project " +
+            "(see CLAUDE.md Guardrails). A human runs 'dotnet ef database update'.")
         exit 2
     }
 }
