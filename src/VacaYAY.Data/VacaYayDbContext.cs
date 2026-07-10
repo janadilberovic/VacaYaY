@@ -38,6 +38,13 @@ public class VacaYAYDbContext : DbContext
             entity.Property(t => t.Name)
                 .HasConversion<string>()
                 .HasMaxLength(20);
+
+            entity.Property(t => t.Color)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            //soft delete filter
+            entity.HasQueryFilter(t => !t.IsDeleted);
         });
 
         modelBuilder.Entity<LeaveRequest>(entity =>
