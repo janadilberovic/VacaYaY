@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VacaYAY.Data;
 
@@ -11,9 +12,11 @@ using VacaYAY.Data;
 namespace VacaYAY.Data.Migrations
 {
     [DbContext(typeof(VacaYAYDbContext))]
-    partial class VacaYAYDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710084505_AddLeaveTypeSoftDeleteAndColor")]
+    partial class AddLeaveTypeSoftDeleteAndColor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
