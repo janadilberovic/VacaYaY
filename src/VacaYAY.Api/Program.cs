@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using FluentValidation;
 using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,7 +11,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using VacaYAY.Business.DTOs.Auth;
 using VacaYAY.Business.Interfaces.Auth;
+using VacaYAY.Business.Interfaces.LeaveType;
 using VacaYAY.Business.Services.Auth;
+using VacaYAY.Business.Services.LeaveType;
 using VacaYAY.Business.Validators.Auth;
 using VacaYAY.Data;
 using VacaYAY.Domain.Entities;
@@ -19,7 +22,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialize enums as their names so Swagger renders a named dropdown
+        // (e.g. "Annual"/"Red") instead of raw integers.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -64,6 +74,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ILeaveTypeService, LeaveTypeService>();
 builder.Services.AddSingleton<ITokenDenylist, TokenDenylist>(); // singleton: revocations must outlive requests
 
 // FluentValidation: register every validator in the Business assembly.
