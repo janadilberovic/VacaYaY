@@ -43,6 +43,9 @@ public class VacaYAYDbContext : DbContext
                 .HasConversion<string>()
                 .HasMaxLength(20);
 
+            //one type per name 
+            entity.HasIndex(t => t.Name).IsUnique();
+
             //soft delete filter
             entity.HasQueryFilter(t => !t.IsDeleted);
         });

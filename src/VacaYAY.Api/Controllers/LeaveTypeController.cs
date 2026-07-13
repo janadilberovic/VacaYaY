@@ -56,12 +56,17 @@ public class LeaveTypeController : ControllerBase
         }
 
         var result = await _leaveTypeService.CreateAsync(request, cancellationToken);
-        if (result is null)
+        return result.Status switch
         {
-            return Problem(statusCode: StatusCodes.Status409Conflict, title: "A leave type with this name already exists.");
-        }
-
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            CreateLeaveTypeStatus.NameConflict => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "A leave type with this name already exists."),
+            CreateLeaveTypeStatus.ArchivedExists => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "A leave type with this name is archived.",
+                detail: $"Restore leave type {result.ArchivedId} to reuse this name."),
+            _ => CreatedAtAction(nameof(GetById), new { id = result.Dto!.Id }, result.Dto),
+        };
     }
 
     [HttpPut("{id:int}")]
@@ -79,6 +84,19 @@ public class LeaveTypeController : ControllerBase
         if (result is null)
         {
             return Problem(statusCode: StatusCodes.Status404NotFound, title: "Leave type not found.");
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/restore")]
+    [Authorize(Policy = "HrOnly")]
+    public async Task<ActionResult<LeaveTypeDto>> Restore(int id, CancellationToken cancellationToken)
+    {
+        var result = await _leaveTypeService.RestoreAsync(id, cancellationToken);
+        if (result is null)
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Archived leave type not found.");
         }
 
         return Ok(result);
