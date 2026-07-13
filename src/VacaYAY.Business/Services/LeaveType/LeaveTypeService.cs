@@ -39,19 +39,27 @@ public class LeaveTypeService : ILeaveTypeService
         return result;
     }
 
-    public async Task<LeaveTypeDto?> CreateAsync(CreateLeaveTypeRequest request, CancellationToken cancellationToken = default)
+    public async Task<CreateLeaveTypeResult> CreateAsync(CreateLeaveTypeRequest request, CancellationToken cancellationToken = default)
     {
         //one active type per name!!
-        bool isNameTaken = await _db.LeaveTypes.AnyAsync(lt => lt.Name==request.Name, cancellationToken);
+        bool activeMatch = await _db.LeaveTypes.AnyAsync(lt => lt.Name==request.Name, cancellationToken);
 
-        if(isNameTaken) { return null; } //controller maps to 409
+        if(activeMatch) { return CreateLeaveTypeResult.Conflict; } //controller maps to 409
+
+        // The unique index on Name spans soft-deleted rows too (MySQL has no filtered indexes),
+        // so a name held by an archived type can't just be re-inserted — surface it for restore.
+        var archived = await _db.LeaveTypes
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(lt => lt.Name == request.Name && lt.IsDeleted, cancellationToken);
+
+        if(archived is not null) { return CreateLeaveTypeResult.Archived(archived.Id); }
 
         var lt=request.Adapt<LeaveTypeEntity>();
 
         _db.LeaveTypes.Add(lt);
         await _db.SaveChangesAsync(cancellationToken);
 
-        return lt.Adapt<LeaveTypeDto>();
+        return CreateLeaveTypeResult.Created(lt.Adapt<LeaveTypeDto>());
     }
 
     public async Task<LeaveTypeDto?> UpdateAsync(int id, UpdateLeaveTypeRequest request, CancellationToken cancellationToken = default)
@@ -60,13 +68,13 @@ public class LeaveTypeService : ILeaveTypeService
 
         if(lt==null) {return null;}
 
+        // Name is immutable, so no uniqueness check is needed here — the request only
+        // carries the editable fields (Color/IsPaid/CountsAgainstBalance).
         request.Adapt(lt);
 
         await _db.SaveChangesAsync(cancellationToken);
 
         return lt.Adapt<LeaveTypeDto>();
-
-        
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -75,10 +83,25 @@ public class LeaveTypeService : ILeaveTypeService
 
         if (lt == null) { return false; } 
 
-        //soft delete 
+        //soft delete
         lt.IsDeleted = true;
         await _db.SaveChangesAsync(cancellationToken);
 
         return true;
+    }
+
+    public async Task<LeaveTypeDto?> RestoreAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Bypass the soft-delete filter — we're specifically looking for an archived row.
+        var lt = await _db.LeaveTypes
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted, cancellationToken);
+
+        if (lt is null) { return null; }
+
+        lt.IsDeleted = false;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return lt.Adapt<LeaveTypeDto>();
     }
 }

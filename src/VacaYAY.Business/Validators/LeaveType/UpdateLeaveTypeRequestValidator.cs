@@ -7,8 +7,7 @@ public class UpdateLeaveTypeRequestValidator : AbstractValidator<UpdateLeaveType
 {
     public UpdateLeaveTypeRequestValidator()
     {
-        RuleFor(x => x.Name)
-            .IsInEnum().WithMessage("Name must be a valid leave type.");
+        // Name is immutable on update, so it is not part of the update request.
 
         // Color is optional (LeaveColor?); only validate the range when a value is supplied.
         RuleFor(x => x.Color!.Value)
