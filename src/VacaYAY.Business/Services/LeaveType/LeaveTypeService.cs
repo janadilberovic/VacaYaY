@@ -46,8 +46,7 @@ public class LeaveTypeService : ILeaveTypeService
 
         if(activeMatch) { return CreateLeaveTypeResult.Conflict; } //controller maps to 409
 
-        // The unique index on Name spans soft-deleted rows too (MySQL has no filtered indexes),
-        // so a name held by an archived type can't just be re-inserted — surface it for restore.
+        
         var archived = await _db.LeaveTypes
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(lt => lt.Name == request.Name && lt.IsDeleted, cancellationToken);
@@ -68,8 +67,7 @@ public class LeaveTypeService : ILeaveTypeService
 
         if(lt==null) {return null;}
 
-        // Name is immutable, so no uniqueness check is needed here — the request only
-        // carries the editable fields (Color/IsPaid/CountsAgainstBalance).
+        
         request.Adapt(lt);
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -92,7 +90,6 @@ public class LeaveTypeService : ILeaveTypeService
 
     public async Task<LeaveTypeDto?> RestoreAsync(int id, CancellationToken cancellationToken = default)
     {
-        // Bypass the soft-delete filter — we're specifically looking for an archived row.
         var lt = await _db.LeaveTypes
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted, cancellationToken);
