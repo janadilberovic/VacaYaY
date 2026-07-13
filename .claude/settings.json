@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "powershell -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-ef-commands.ps1\"",
+            "timeout": 30,
+            "statusMessage": "Checking for blocked EF commands..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "powershell -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-protected-files.ps1\"",
+            "timeout": 30,
+            "statusMessage": "Checking for protected files / secrets..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "powershell -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-changed-cs.ps1\"",
+            "timeout": 120,
+            "statusMessage": "Formatting changed C# file..."
+          }
+        ]
+      }
+    ]
+  }
+}
