@@ -87,13 +87,22 @@ public class LeaveRequestService : ILeaveRequestService
         if (leaveRequest is null) { return ReviewLeaveRequestResult.NotFound; }
         if (leaveRequest.Status != LeaveRequestStatus.Pending) { return ReviewLeaveRequestResult.NotPending; }
 
-        // Deduct the balance only for types that count against it.
-        if (leaveRequest.LeaveType is not null && leaveRequest.LeaveType.CountsAgainstBalance)
-        {
-            int workingDays = CountWorkingDays(leaveRequest.StartDate, leaveRequest.EndDate);
-            if (leaveRequest.Employee!.DaysOff < workingDays) { return ReviewLeaveRequestResult.InsufficientBalance; }
+        bool countsAgainstBalance = leaveRequest.LeaveType is not null && leaveRequest.LeaveType.CountsAgainstBalance;
+        int workingDays = countsAgainstBalance ? CountWorkingDays(leaveRequest.StartDate, leaveRequest.EndDate) : 0;
 
-            leaveRequest.Employee.DaysOff -= workingDays;
+        // Wrap the balance deduction and the status change so they commit (or roll back) together.
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        if (workingDays > 0)
+        {
+           
+            int affected = await _db.Users
+                .Where(u => u.Id == leaveRequest.EmployeeId && u.DaysOff >= workingDays)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(u => u.DaysOff, u => u.DaysOff - workingDays),
+                    cancellationToken);
+
+            if (affected == 0) { return ReviewLeaveRequestResult.InsufficientBalance; }
         }
 
         leaveRequest.Status = LeaveRequestStatus.Approved;
@@ -102,6 +111,7 @@ public class LeaveRequestService : ILeaveRequestService
         leaveRequest.ReviewedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return ReviewLeaveRequestResult.Reviewed(ToDto(leaveRequest));
     }
@@ -132,6 +142,7 @@ public class LeaveRequestService : ILeaveRequestService
         // Don't reveal other employees' requests — treat as not found.
         if (leaveRequest is null || leaveRequest.EmployeeId != employeeId) { return ReviewLeaveRequestResult.NotFound; }
 
+        int refundDays = 0;
         switch (leaveRequest.Status)
         {
             case LeaveRequestStatus.Pending:
@@ -141,8 +152,7 @@ public class LeaveRequestService : ILeaveRequestService
                 // Refund the days that were deducted on approval.
                 if (leaveRequest.LeaveType is not null && leaveRequest.LeaveType.CountsAgainstBalance)
                 {
-                    int workingDays = CountWorkingDays(leaveRequest.StartDate, leaveRequest.EndDate);
-                    leaveRequest.Employee!.DaysOff += workingDays;
+                    refundDays = CountWorkingDays(leaveRequest.StartDate, leaveRequest.EndDate);
                 }
                 break;
 
@@ -150,8 +160,23 @@ public class LeaveRequestService : ILeaveRequestService
                 return ReviewLeaveRequestResult.NotPending;
         }
 
+        // Wrap the refund and the status change so they commit (or roll back) together.
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        if (refundDays > 0)
+        {
+            // Atomic increment against the current DB value, so a concurrent approval's deduction
+            // isn't lost to a stale in-memory read.
+            await _db.Users
+                .Where(u => u.Id == leaveRequest.EmployeeId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(u => u.DaysOff, u => u.DaysOff + refundDays),
+                    cancellationToken);
+        }
+
         leaveRequest.Status = LeaveRequestStatus.Cancelled;
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return ReviewLeaveRequestResult.Reviewed(ToDto(leaveRequest));
     }
