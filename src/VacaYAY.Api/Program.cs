@@ -11,8 +11,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using VacaYAY.Business.DTOs.Auth;
 using VacaYAY.Business.Interfaces.Auth;
+using VacaYAY.Business.Interfaces.LeaveRequest;
 using VacaYAY.Business.Interfaces.LeaveType;
 using VacaYAY.Business.Services.Auth;
+using VacaYAY.Business.Services.LeaveRequest;
 using VacaYAY.Business.Services.LeaveType;
 using VacaYAY.Business.Validators.Auth;
 using VacaYAY.Data;
@@ -75,6 +77,8 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILeaveTypeService, LeaveTypeService>();
+builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
+builder.Services.AddSingleton<IHolidayProvider, SerbianHolidayProvider>(); // thread-safe ConcurrentDictionary cache; no DbContext
 builder.Services.AddSingleton<ITokenDenylist, TokenDenylist>(); // singleton: revocations must outlive requests
 
 // FluentValidation: register every validator in the Business assembly.
