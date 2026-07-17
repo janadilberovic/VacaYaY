@@ -74,6 +74,17 @@ if (string.IsNullOrWhiteSpace(jwt.SigningKey) || Encoding.UTF8.GetByteCount(jwt.
         "dotnet user-secrets set \"Jwt:SigningKey\" \"<32+ byte random value>\"");
 }
 
+// CORS for the SPA. Dev uses a same-origin proxy so this mainly covers direct/prod
+// calls; origins come from config (Cors:AllowedOrigins) with a dev default.
+const string SpaCorsPolicy = "SpaCors";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173" };
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(SpaCorsPolicy, policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
+});
+
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -151,6 +162,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(SpaCorsPolicy);
 
 app.UseAuthentication(); // must come before UseAuthorization
 app.UseAuthorization();
