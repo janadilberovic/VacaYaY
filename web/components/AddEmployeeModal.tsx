@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Modal, ModalHeader } from './Modal'
+import { DatePicker } from './DatePicker'
 import { useToast } from '@/state/toast'
 import { employees } from '@/lib/endpoints'
 import { ApiError } from '@/lib/api'
@@ -151,7 +152,7 @@ export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; 
               </div>
               <div>
                 <label htmlFor="e-hired" className="field-label">Hire date</label>
-                <input id="e-hired" type="date" className="input" value={f.hireDate} onChange={(e) => set('hireDate', e.target.value)} />
+                <DatePicker id="e-hired" value={f.hireDate} onChange={(iso) => set('hireDate', iso)} />
               </div>
               <div>
                 <label htmlFor="e-bal" className="field-label">Balance</label>

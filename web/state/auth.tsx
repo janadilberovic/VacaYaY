@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { getToken, setToken } from '@/lib/api'
-import { auth as authApi } from '@/lib/endpoints'
-import type { AuthResponse, AuthUser } from '@/lib/types'
+import { auth as authApi, employees } from '@/lib/endpoints'
+import type { AuthResponse, AuthUser, EmployeeDto } from '@/lib/types'
 
 const USER_KEY = 'vacayay.user'
 
@@ -19,6 +19,7 @@ interface AuthCtx {
   login: (email: string, password: string) => Promise<AuthResponse>
   changePassword: (newPassword: string, confirmNewPassword: string) => Promise<AuthResponse>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -71,6 +72,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res
   }
 
+  /** Pull the live employee record so balance-affecting changes (approvals, cancellations)
+   *  are reflected after login, which is when the cached user was captured. */
+  async function refreshUser() {
+    if (!getToken()) return
+    let me: EmployeeDto
+    try {
+      me = await employees.me()
+    } catch {
+      return
+    }
+    const next: AuthUser = {
+      id: me.id,
+      firstName: me.firstName,
+      lastName: me.lastName,
+      email: me.email,
+      role: me.role,
+      department: me.department,
+      jobTitle: me.jobTitle,
+      daysOff: me.daysOff,
+      profileImageUrl: me.profileImageUrl,
+    }
+    window.localStorage.setItem(USER_KEY, JSON.stringify(next))
+    setUser(next)
+  }
+
   async function logout() {
     try {
       await authApi.logout()
@@ -84,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ user, ready, pendingChange, login, changePassword, logout }}>
+    <Ctx.Provider value={{ user, ready, pendingChange, login, changePassword, logout, refreshUser }}>
       {children}
     </Ctx.Provider>
   )

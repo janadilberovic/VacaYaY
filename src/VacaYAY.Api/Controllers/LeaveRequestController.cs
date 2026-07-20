@@ -38,6 +38,19 @@ public class LeaveRequestController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("holidays")]
+    public async Task<ActionResult<IReadOnlyList<DateOnly>>> GetHolidays([FromQuery] int? year, CancellationToken cancellationToken)
+    {
+        int target = year ?? DateTime.UtcNow.Year;
+        if (target < 2000 || target > 2100)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Year must be between 2000 and 2100.");
+        }
+
+        var result = await _leaveRequestService.GetHolidaysAsync(target, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<LeaveRequestDto>> GetById(int id, CancellationToken cancellationToken)
     {

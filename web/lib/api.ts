@@ -53,7 +53,7 @@ async function request<T>(method: string, path: string, body: Body): Promise<T> 
     payload = new URLSearchParams(body.value).toString()
   }
 
-  const res = await fetch(`/api${path}`, { method, headers, body: payload })
+  const res = await fetch(`/api${path}`, { method, headers, body: payload, cache: 'no-store' })
 
   if (res.status === 204) return undefined as T
 
