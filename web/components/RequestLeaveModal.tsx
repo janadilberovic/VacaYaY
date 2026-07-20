@@ -10,7 +10,8 @@ import { useLeaveModal } from '@/state/leaveModal'
 import { leaveRequests, leaveTypes as leaveTypesApi } from '@/lib/endpoints'
 import { ApiError } from '@/lib/api'
 import { colorHex, leaveTypeLabel } from '@/lib/leave'
-import { estimateWorkingDays, fmt, range, todayISO, workingDaysNoun } from '@/lib/dates'
+import { eachDayISO, estimateWorkingDays, fmt, isoDate, range, todayISO, workingDaysNoun } from '@/lib/dates'
+import { useHolidays } from '@/lib/holidays'
 import type { LeaveTypeDto } from '@/lib/types'
 
 interface Errors {
@@ -32,6 +33,7 @@ export function RequestLeaveModal() {
   const [reason, setReason] = useState('')
   const [errs, setErrs] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
+  const [bookedDays, setBookedDays] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!isOpen) return
@@ -41,11 +43,35 @@ export function RequestLeaveModal() {
     setReason('')
     setErrs({})
     setSubmitting(false)
+    setBookedDays(new Set())
     leaveTypesApi.all().then(setTypes).catch(() => setTypes([]))
+    leaveRequests
+      .mine()
+      .then((reqs) => {
+        const days = new Set<string>()
+        for (const r of reqs) {
+          if (r.status === 'Pending' || r.status === 'Approved') {
+            for (const iso of eachDayISO(isoDate(r.startDate), isoDate(r.endDate))) days.add(iso)
+          }
+        }
+        setBookedDays(days)
+      })
+      .catch(() => setBookedDays(new Set()))
   }, [isOpen])
 
   const selected = useMemo(() => types.find((t) => t.id === typeId) ?? null, [types, typeId])
-  const previewDays = start && end && end >= start ? estimateWorkingDays(start, end) : null
+  const previewYears = useMemo(() => {
+    if (!start) return []
+    const from = Number(start.slice(0, 4))
+    const to = Number((end || start).slice(0, 4))
+    const years: number[] = []
+    for (let y = from; y <= to; y++) years.push(y)
+    return years
+  }, [start, end])
+  const holidays = useHolidays(previewYears)
+  const previewDays = start && end && end >= start ? estimateWorkingDays(start, end, holidays) : null
+  // Provisional warning only — the authoritative check is ApproveAsync in LeaveRequestService
+  // (deducts when DaysOff >= workingDays for CountsAgainstBalance types). Keep this in sync with it.
   const overBalance =
     previewDays !== null && !!selected?.countsAgainstBalance && !!user && previewDays > user.daysOff
 
@@ -146,7 +172,7 @@ export function RequestLeaveModal() {
           </div>
           {errs.start && <div className="err" style={{ marginTop: 0, marginBottom: 6 }}>{errs.start}</div>}
           {errs.end && <div className="err" style={{ marginTop: 0, marginBottom: 6 }}>{errs.end}</div>}
-          <Calendar start={start} end={end} onSelectDay={pickDay} />
+          <Calendar start={start} end={end} onSelectDay={pickDay} bookedDays={bookedDays} />
         </div>
 
         {previewDays !== null && (

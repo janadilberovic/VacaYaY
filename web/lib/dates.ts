@@ -30,15 +30,36 @@ export function range(start: string, end: string): string {
   return s === e ? fmt(s) : `${fmt(s, false)} – ${fmt(e)}`
 }
 
-/** Weekday-only count for the in-modal preview; the API returns the authoritative
- *  figure (which also excludes Serbian public holidays) on the created request. */
-export function estimateWorkingDays(start: string, end: string): number {
+function isoOf(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+export function isWeekendISO(iso: string): boolean {
+  const day = new Date(`${iso}T00:00`).getDay()
+  return day === 0 || day === 6
+}
+
+/** Every ISO date in [start, end] inclusive. */
+export function eachDayISO(start: string, end: string): string[] {
+  const out: string[] = []
+  let d = new Date(`${start}T00:00`)
+  const last = new Date(`${end}T00:00`)
+  while (d <= last) {
+    out.push(isoOf(d))
+    d = new Date(d.getTime() + 86400000)
+  }
+  return out
+}
+
+/** Working-day count for the in-modal preview — excludes weekends and the public
+ *  holidays supplied from the API, matching the authoritative figure it returns. */
+export function estimateWorkingDays(start: string, end: string, holidays: ReadonlySet<string>): number {
   let d = new Date(`${start}T00:00`)
   const last = new Date(`${end}T00:00`)
   let n = 0
   while (d <= last) {
     const day = d.getDay()
-    if (day !== 0 && day !== 6) n++
+    if (day !== 0 && day !== 6 && !holidays.has(isoOf(d))) n++
     d = new Date(d.getTime() + 86400000)
   }
   return n

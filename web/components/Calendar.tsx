@@ -1,21 +1,32 @@
 'use client'
 
 import { useState } from 'react'
-import { pad, todayISO } from '@/lib/dates'
+import { isWeekendISO, pad, todayISO } from '@/lib/dates'
+import { useHolidays } from '@/lib/holidays'
 
 interface Props {
   start: string
   end: string
   onSelectDay: (iso: string) => void
+  /** ISO dates already covered by a pending/approved request — shaded and not selectable. */
+  bookedDays?: Set<string>
 }
 
 const LOCALE = 'en-US'
 
-/** Range picker: click a start day, then an end day. Past days are disabled. */
-export function Calendar({ start, end, onSelectDay }: Props) {
+const LEGEND = [
+  { swatch: 'var(--accent)', label: 'Selected' },
+  { swatch: 'var(--pill-pending-bg)', label: 'Already requested' },
+  { swatch: 'var(--pill-rejected-bg)', label: 'Holiday' },
+  { swatch: 'var(--surface2)', label: 'Weekend' },
+]
+
+/** Range picker: click a start day, then an end day. Past and already-requested days are disabled. */
+export function Calendar({ start, end, onSelectDay, bookedDays }: Props) {
   const base = new Date(`${start || todayISO()}T00:00`)
   const [view, setView] = useState({ y: base.getFullYear(), m: base.getMonth() })
   const today = todayISO()
+  const holidays = useHolidays([view.y])
 
   function shift(delta: number) {
     setView((v) => {
@@ -37,31 +48,60 @@ export function Calendar({ start, end, onSelectDay }: Props) {
   }
 
   const cells: React.ReactNode[] = []
-  for (let i = 0; i < lead; i++) cells.push(<div key={`lead-${i}`} style={{ height: 26 }} />)
+  for (let i = 0; i < lead; i++) cells.push(<div key={`lead-${i}`} style={{ height: 30 }} />)
 
   for (let d = 1; d <= dim; d++) {
     const iso = `${view.y}-${pad(view.m + 1)}-${pad(d)}`
-    const dow = new Date(view.y, view.m, d).getDay()
     const past = iso < today
     const isEdge = iso === start || iso === end
     const inRange = !!start && !!end && iso > start && iso < end
+    const booked = !!bookedDays?.has(iso)
+    const holiday = holidays.has(iso)
+    const weekend = isWeekendISO(iso)
+    const disabled = past || booked
+
+    let background = 'transparent'
+    let color = 'var(--text)'
+    let title: string | undefined
+
+    if (isEdge) {
+      background = 'var(--accent)'
+      color = '#fff'
+    } else if (inRange) {
+      background = 'color-mix(in oklab, var(--accent) 14%, transparent)'
+    } else if (past) {
+      color = 'var(--text3)'
+    } else if (booked) {
+      background = 'var(--pill-pending-bg)'
+      color = 'var(--pill-pending-fg)'
+      title = 'Already requested'
+    } else if (holiday) {
+      background = 'var(--pill-rejected-bg)'
+      color = 'var(--pill-rejected-fg)'
+      title = 'Public holiday'
+    } else if (weekend) {
+      background = 'var(--surface2)'
+      color = 'var(--text3)'
+      title = 'Weekend'
+    }
+
     cells.push(
       <button
         key={iso}
-        onClick={() => !past && onSelectDay(iso)}
+        onClick={() => !disabled && onSelectDay(iso)}
+        disabled={disabled}
+        title={title}
         style={{
-          height: 26,
+          height: 30,
           border: 'none',
           borderRadius: inRange ? 0 : 8,
-          background: isEdge
-            ? 'var(--accent)'
-            : inRange
-            ? 'color-mix(in oklab, var(--accent) 14%, transparent)'
-            : 'transparent',
-          color: isEdge ? '#fff' : past || dow === 0 || dow === 6 ? 'var(--text3)' : 'var(--text)',
+          background,
+          color,
           fontSize: 11.5,
           fontWeight: isEdge ? 700 : 500,
-          cursor: past ? 'default' : 'pointer',
+          textDecoration: booked && !isEdge ? 'line-through' : 'none',
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: past ? 0.55 : 1,
           fontFamily: 'inherit',
           padding: 0,
         }}
@@ -111,6 +151,14 @@ export function Calendar({ start, end, onSelectDay }: Props) {
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)' }}>{cells}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 14px', marginTop: 10 }}>
+        {LEGEND.map((l) => (
+          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--text3)' }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: l.swatch, border: '1px solid var(--border)' }} />
+            {l.label}
+          </div>
+        ))}
+      </div>
       <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>
         Click a start day, then an end day to select the range.
       </div>

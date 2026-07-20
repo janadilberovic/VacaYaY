@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { StatusPill, Badge } from '@/components/Pill'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { leaveRequests, leaveTypes as leaveTypesApi } from '@/lib/endpoints'
+import { useAuth } from '@/state/auth'
 import { useToast } from '@/state/toast'
 import { colorHex, leaveTypeLabel } from '@/lib/leave'
 import { fmt, range, workingDaysNoun } from '@/lib/dates'
@@ -15,6 +16,7 @@ export default function RequestDetailPage() {
   const id = Number(params.id)
   const router = useRouter()
   const { toast } = useToast()
+  const { refreshUser } = useAuth()
 
   const [req, setReq] = useState<LeaveRequestDto | null>(null)
   const [type, setType] = useState<LeaveTypeDto | null>(null)
@@ -44,6 +46,7 @@ export default function RequestDetailPage() {
     try {
       await leaveRequests.cancel(id)
       toast('Request cancelled.')
+      refreshUser()
       router.push('/requests')
     } catch {
       toast('Could not cancel the request.', 'error')

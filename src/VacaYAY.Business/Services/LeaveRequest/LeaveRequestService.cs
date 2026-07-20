@@ -181,6 +181,12 @@ public class LeaveRequestService : ILeaveRequestService
         return ReviewLeaveRequestResult.Reviewed(ToDto(leaveRequest));
     }
 
+    public Task<IReadOnlyList<DateOnly>> GetHolidaysAsync(int year, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<DateOnly> days = _holidays.ForYear(year).OrderBy(d => d).ToList();
+        return Task.FromResult(days);
+    }
+
     //helper da vracam zaposlene i leavetype
     private static IQueryable<LeaveRequestEntity> WithNavigations(IQueryable<LeaveRequestEntity> query) =>
         query.Include(r => r.Employee).Include(r => r.LeaveType);

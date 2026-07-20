@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/state/auth'
 import { useToast } from '@/state/toast'
 import { leaveRequests } from '@/lib/endpoints'
 import { ApiError } from '@/lib/api'
@@ -15,6 +16,7 @@ interface Props {
 
 export function ReviewModal({ req, action, onClose, onReviewed }: Props) {
   const { toast } = useToast()
+  const { refreshUser } = useAuth()
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -33,6 +35,7 @@ export function ReviewModal({ req, action, onClose, onReviewed }: Props) {
       const updated = approving ? await leaveRequests.approve(req.id, note) : await leaveRequests.reject(req.id, note)
       toast(approving ? 'Request approved.' : 'Request rejected.')
       onReviewed(updated)
+      refreshUser()
       onClose()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong.')

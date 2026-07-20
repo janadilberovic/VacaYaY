@@ -29,6 +29,7 @@ export const leaveRequests = {
   byId: (id: number) => api.get<LeaveRequestDto>(`/leave-requests/${id}`),
   create: (body: CreateLeaveRequestRequest) =>
     api.post<LeaveRequestDto>('/leave-requests', body),
+  holidays: (year: number) => api.get<string[]>(`/leave-requests/holidays?year=${year}`),
   approve: (id: number, hrComment: string | null) =>
     api.post<LeaveRequestDto>(`/leave-requests/${id}/approve`, { hrComment }),
   reject: (id: number, hrComment: string | null) =>

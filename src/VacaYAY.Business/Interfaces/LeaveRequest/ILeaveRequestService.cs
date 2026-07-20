@@ -17,4 +17,6 @@ public interface ILeaveRequestService
     Task<ReviewLeaveRequestResult> RejectAsync(int id, int hrUserId, ReviewLeaveRequestRequest request, CancellationToken cancellationToken = default);
 
     Task<ReviewLeaveRequestResult> CancelAsync(int id, int employeeId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<DateOnly>> GetHolidaysAsync(int year, CancellationToken cancellationToken = default);
 }
