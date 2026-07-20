@@ -13,6 +13,11 @@ indent_size = 4
 [*.{json,jsonc,yml,yaml,csproj,props,targets}]
 indent_size = 2
 
+# Web frontend (Next.js/TS) — 2-space, LF; matches the code and web/.prettierrc.json.
+[web/**.{ts,tsx,js,jsx,mjs,cjs,css}]
+indent_size = 2
+end_of_line = lf
+
 [*.md]
 trim_trailing_whitespace = false
 
