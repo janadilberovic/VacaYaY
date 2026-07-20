@@ -1,6 +1,6 @@
 ---
 name: lean-code
-description: Write and edit code without unnecessary comments or superfluous code. Use whenever writing new code, editing existing code, or reviewing a diff in VacaYAY — especially when tempted to add explanatory comments, defensive scaffolding, or restate what the code already says. Apply on every "add", "implement", "write", "fix", or "refactor" task, not only when the user explicitly mentions comments.
+description: Write and edit code without unnecessary comments or superfluous code. Consult this on EVERY code write or edit in VacaYAY before finalizing it — including small one-line changes — not just large tasks, and re-check the diff for noisy comments before finishing. Especially when tempted to add explanatory comments, defensive scaffolding, or restate what the code already says. Applies to every "add", "implement", "write", "fix", or "refactor" task even when the user never mentions comments; a comment that just says what the code already shows should not be written.
 ---
 
 # Lean code

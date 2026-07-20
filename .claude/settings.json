@@ -23,6 +23,13 @@
             "command": "powershell -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-protected-files.ps1\"",
             "timeout": 30,
             "statusMessage": "Checking for protected files / secrets..."
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "powershell -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-dto-leaks.ps1\"",
+            "timeout": 30,
+            "statusMessage": "Checking DTOs for entity/secret leaks..."
           }
         ]
       }
