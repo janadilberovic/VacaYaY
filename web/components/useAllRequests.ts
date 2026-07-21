@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { leaveRequests, leaveTypes as leaveTypesApi } from '@/lib/endpoints'
+import { useLeaveModal } from '@/state/leaveModal'
 import type { LeaveRequestDto, LeaveTypeDto } from '@/lib/types'
 
 export function useAllRequests() {
+  const { refreshKey } = useLeaveModal()
   const [requests, setRequests] = useState<LeaveRequestDto[]>([])
   const [typeMap, setTypeMap] = useState<Map<number, LeaveTypeDto>>(new Map())
   const [loading, setLoading] = useState(true)
@@ -22,7 +24,7 @@ export function useAllRequests() {
     return () => {
       active = false
     }
-  }, [])
+  }, [refreshKey])
 
   /** Replace one request in place after a review action. */
   const patch = (updated: LeaveRequestDto) =>
