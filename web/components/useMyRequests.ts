@@ -26,10 +26,11 @@ export function useMyRequests(): MyRequestsData {
   useEffect(() => {
     let active = true
     setLoading(true)
-    Promise.all([leaveRequests.mine(), leaveTypesApi.all()])
+    // This view isn't paged — ask for the largest page the API allows.
+    Promise.all([leaveRequests.mine({ pageSize: 100 }), leaveTypesApi.all()])
       .then(([reqs, types]) => {
         if (!active) return
-        setRequests(reqs)
+        setRequests(reqs.items)
         setTypeMap(new Map(types.map((t) => [t.id, t])))
       })
       .catch(() => active && setRequests([]))

@@ -1,5 +1,6 @@
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using VacaYAY.Business.DTOs.Common;
 using VacaYAY.Business.DTOs.Employee;
 using VacaYAY.Business.Interfaces.Employee;
 using VacaYAY.Data;
@@ -21,15 +22,34 @@ public class EmployeeService : IEmployeeService
         _db = db;
     }
 
-    public async Task<IReadOnlyList<EmployeeDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResult<EmployeeDto>> GetPagedAsync(GetEmployeesRequest request, CancellationToken cancellationToken = default)
     {
-        var employees = await _db.Users
-            .AsNoTracking()
+        var query = _db.Users.AsNoTracking();
+
+        // Archived rows are hidden by the soft-delete filter — bypass it to list them.
+        if (request.Archived)
+        {
+            query = query.IgnoreQueryFilters().Where(u => u.IsDeleted);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
             .OrderBy(u => u.LastName)
             .ThenBy(u => u.FirstName)
+            .ThenBy(u => u.Id) // tiebreaker: without it duplicate names can shuffle between pages
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ProjectToType<EmployeeDto>()
             .ToListAsync(cancellationToken);
 
-        return employees.Adapt<List<EmployeeDto>>();
+        return new PagedResult<EmployeeDto>
+        {
+            Items = items,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+        };
     }
 
     public async Task<EmployeeDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

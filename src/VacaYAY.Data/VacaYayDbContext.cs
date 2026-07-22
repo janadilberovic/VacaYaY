@@ -14,6 +14,7 @@ public class VacaYAYDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<LeaveType> LeaveTypes => Set<LeaveType>();
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+    public DbSet<LegacyEmployee> LegacyEmployees => Set<LegacyEmployee>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,6 +73,26 @@ public class VacaYAYDbContext : DbContext
 
         }
         );
+
+        modelBuilder.Entity<LegacyEmployee>(entity =>
+        {
+            // The old system owns this table — it is created and populated outside the app, so EF
+            // maps it but never generates migrations for it.
+            entity.ToTable("legacy_employees", t => t.ExcludeFromMigrations());
+
+            entity.HasKey(e => e.LegacyId);
+            entity.Property(e => e.LegacyId).HasColumnName("legacy_id").ValueGeneratedNever();
+            entity.Property(e => e.FirstName).HasColumnName("first_name").HasMaxLength(100);
+            entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
+            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(256);
+            entity.Property(e => e.Department).HasColumnName("department").HasMaxLength(100);
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(100);
+            entity.Property(e => e.HiredOn).HasColumnName("hired_on").HasColumnType("date");
+            entity.Property(e => e.ContractEnd).HasColumnName("contract_end").HasColumnType("date");
+            entity.Property(e => e.DaysOff).HasColumnName("days_off");
+
+            entity.HasIndex(e => e.Email).IsUnique();
+        });
 
     }
 }

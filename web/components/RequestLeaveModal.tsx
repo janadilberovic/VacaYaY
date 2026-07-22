@@ -10,7 +10,15 @@ import { useLeaveModal } from '@/state/leaveModal'
 import { leaveRequests, leaveTypes as leaveTypesApi } from '@/lib/endpoints'
 import { ApiError } from '@/lib/api'
 import { colorHex, leaveTypeLabel } from '@/lib/leave'
-import { eachDayISO, estimateWorkingDays, fmt, isoDate, range, todayISO, workingDaysNoun } from '@/lib/dates'
+import {
+  eachDayISO,
+  estimateWorkingDays,
+  fmt,
+  isoDate,
+  range,
+  todayISO,
+  workingDaysNoun,
+} from '@/lib/dates'
 import { useHolidays } from '@/lib/holidays'
 import type { LeaveTypeDto } from '@/lib/types'
 
@@ -44,12 +52,15 @@ export function RequestLeaveModal() {
     setErrs({})
     setSubmitting(false)
     setBookedDays(new Set())
-    leaveTypesApi.all().then(setTypes).catch(() => setTypes([]))
+    leaveTypesApi
+      .all()
+      .then(setTypes)
+      .catch(() => setTypes([]))
     leaveRequests
-      .mine()
+      .mine({ pageSize: 100 })
       .then((reqs) => {
         const days = new Set<string>()
-        for (const r of reqs) {
+        for (const r of reqs.items) {
           if (r.status === 'Pending' || r.status === 'Approved') {
             for (const iso of eachDayISO(isoDate(r.startDate), isoDate(r.endDate))) days.add(iso)
           }
@@ -69,7 +80,8 @@ export function RequestLeaveModal() {
     return years
   }, [start, end])
   const holidays = useHolidays(previewYears)
-  const previewDays = start && end && end >= start ? estimateWorkingDays(start, end, holidays) : null
+  const previewDays =
+    start && end && end >= start ? estimateWorkingDays(start, end, holidays) : null
   // Provisional warning only — the authoritative check is ApproveAsync in LeaveRequestService
   // (deducts when DaysOff >= workingDays for CountsAgainstBalance types). Keep this in sync with it.
   const overBalance =
@@ -109,13 +121,19 @@ export function RequestLeaveModal() {
     setSubmitting(true)
     setErrs({})
     try {
-      await leaveRequests.create({ leaveTypeId: typeId!, startDate: start, endDate: end, reason: reason.trim() || null })
+      await leaveRequests.create({
+        leaveTypeId: typeId!,
+        startDate: start,
+        endDate: end,
+        reason: reason.trim() || null,
+      })
       toast('Leave request submitted — pending HR review.')
       notifyCreated()
       close()
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 409) setErrs({ form: 'This overlaps an existing request. Adjust the dates and try again.' })
+        if (err.status === 409)
+          setErrs({ form: 'This overlaps an existing request. Adjust the dates and try again.' })
         else setErrs({ form: err.firstMessage })
       } else {
         setErrs({ form: 'Something went wrong. Please try again.' })
@@ -155,23 +173,62 @@ export function RequestLeaveModal() {
                     border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
                   }}
                 >
-                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: colorHex(t.color), flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{leaveTypeLabel(t.name)}</span>
-                  <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text3)' }}>{badge}</span>
+                  <span
+                    style={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: '50%',
+                      background: colorHex(t.color),
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>
+                    {leaveTypeLabel(t.name)}
+                  </span>
+                  <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text3)' }}>
+                    {badge}
+                  </span>
                 </button>
               )
             })}
           </div>
-          {errs.type && <div className="err" style={{ marginTop: 6 }}>{errs.type}</div>}
+          {errs.type && (
+            <div className="err" style={{ marginTop: 6 }}>
+              {errs.type}
+            </div>
+          )}
         </div>
 
         <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              marginBottom: 8,
+            }}
+          >
             <div style={{ fontSize: 12.5, fontWeight: 600 }}>Dates</div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: start ? 'var(--text)' : 'var(--text3)' }}>{rangeSummary}</div>
+            <div
+              style={{
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: start ? 'var(--text)' : 'var(--text3)',
+              }}
+            >
+              {rangeSummary}
+            </div>
           </div>
-          {errs.start && <div className="err" style={{ marginTop: 0, marginBottom: 6 }}>{errs.start}</div>}
-          {errs.end && <div className="err" style={{ marginTop: 0, marginBottom: 6 }}>{errs.end}</div>}
+          {errs.start && (
+            <div className="err" style={{ marginTop: 0, marginBottom: 6 }}>
+              {errs.start}
+            </div>
+          )}
+          {errs.end && (
+            <div className="err" style={{ marginTop: 0, marginBottom: 6 }}>
+              {errs.end}
+            </div>
+          )}
           <Calendar start={start} end={end} onSelectDay={pickDay} bookedDays={bookedDays} />
         </div>
 
@@ -203,7 +260,8 @@ export function RequestLeaveModal() {
               fontSize: 12.5,
             }}
           >
-            This exceeds your remaining balance of {user!.daysOff} days — the request will likely be rejected.
+            This exceeds your remaining balance of {user!.daysOff} days — the request will likely be
+            rejected.
           </div>
         )}
 
@@ -226,12 +284,23 @@ export function RequestLeaveModal() {
       <div className="modal-foot">
         <button
           className="btn"
-          style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text2)', padding: '9px 16px', fontSize: 13 }}
+          style={{
+            background: 'none',
+            border: '1px solid var(--border)',
+            color: 'var(--text2)',
+            padding: '9px 16px',
+            fontSize: 13,
+          }}
           onClick={close}
         >
           Cancel
         </button>
-        <button className="btn btn-primary" style={{ padding: '9px 20px', fontSize: 13 }} disabled={submitting} onClick={submit}>
+        <button
+          className="btn btn-primary"
+          style={{ padding: '9px 20px', fontSize: 13 }}
+          disabled={submitting}
+          onClick={submit}
+        >
           {submitting ? 'Submitting…' : 'Submit request'}
         </button>
       </div>

@@ -1,12 +1,15 @@
+using VacaYAY.Business.DTOs.Common;
 using VacaYAY.Business.DTOs.LeaveRequest;
 
 namespace VacaYAY.Business.Interfaces.LeaveRequest;
 
 public interface ILeaveRequestService
 {
-    Task<IReadOnlyList<LeaveRequestDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<LeaveRequestDto>> GetPagedAsync(GetLeaveRequestsRequest request, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<LeaveRequestDto>> GetMineAsync(int employeeId, CancellationToken cancellationToken = default);
+    Task<PagedResult<LeaveRequestDto>> GetMinePagedAsync(int employeeId, GetLeaveRequestsRequest request, CancellationToken cancellationToken = default);
+
+    Task<LeaveRequestSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
 
     Task<LeaveRequestDto?> GetByIdAsync(int id, int requestingUserId, UserRole role, CancellationToken cancellationToken = default);
 

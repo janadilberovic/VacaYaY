@@ -2,8 +2,11 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VacaYAY.Api.Extensions;
+using VacaYAY.Business.DTOs.Common;
 using VacaYAY.Business.DTOs.Employee;
+using VacaYAY.Business.DTOs.EmployeeImport;
 using VacaYAY.Business.Interfaces.Employee;
+using VacaYAY.Business.Interfaces.EmployeeImport;
 
 namespace VacaYAY.Api.Controllers;
 
@@ -13,24 +16,39 @@ namespace VacaYAY.Api.Controllers;
 public class EmployeeController : ControllerBase
 {
     private readonly IEmployeeService _employeeService;
+    private readonly IEmployeeImportService _employeeImportService;
+    private readonly IValidator<GetEmployeesRequest> _getValidator;
     private readonly IValidator<CreateEmployeeRequest> _createValidator;
     private readonly IValidator<UpdateEmployeeRequest> _updateValidator;
+    private readonly IValidator<ImportLegacyEmployeesRequest> _importValidator;
 
     public EmployeeController(
         IEmployeeService employeeService,
+        IEmployeeImportService employeeImportService,
+        IValidator<GetEmployeesRequest> getValidator,
         IValidator<CreateEmployeeRequest> createValidator,
-        IValidator<UpdateEmployeeRequest> updateValidator)
+        IValidator<UpdateEmployeeRequest> updateValidator,
+        IValidator<ImportLegacyEmployeesRequest> importValidator)
     {
         _employeeService = employeeService;
+        _employeeImportService = employeeImportService;
+        _getValidator = getValidator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _importValidator = importValidator;
     }
 
     [HttpGet]
     [Authorize(Policy = "HrOnly")]
-    public async Task<ActionResult<IReadOnlyList<EmployeeDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<EmployeeDto>>> GetPaged([FromQuery] GetEmployeesRequest request, CancellationToken cancellationToken)
     {
-        var result = await _employeeService.GetAllAsync(cancellationToken);
+        var validation = await _getValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ToValidationProblem(validation);
+        }
+
+        var result = await _employeeService.GetPagedAsync(request, cancellationToken);
         return Ok(result);
     }
 
@@ -142,6 +160,26 @@ public class EmployeeController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("legacy")]
+    [Authorize(Policy = "HrOnly")]
+    public async Task<ActionResult<IReadOnlyList<LegacyEmployeeRosterItemDto>>> GetLegacyRoster(CancellationToken cancellationToken)
+    {
+        return Ok(await _employeeImportService.GetRosterAsync(cancellationToken));
+    }
+
+    [HttpPost("import-legacy")]
+    [Authorize(Policy = "HrOnly")]
+    public async Task<ActionResult<ImportLegacyEmployeesResult>> ImportLegacy([FromBody] ImportLegacyEmployeesRequest request, CancellationToken cancellationToken)
+    {
+        var validation = await _importValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ToValidationProblem(validation);
+        }
+
+        return Ok(await _employeeImportService.ImportAsync(request, cancellationToken));
     }
 
     private ActionResult ToValidationProblem(FluentValidation.Results.ValidationResult validation)
