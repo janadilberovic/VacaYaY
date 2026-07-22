@@ -9,6 +9,8 @@ import type {
   EmployeeQuery,
   ImportLegacyEmployeesResult,
   LeaveRequestDto,
+  LeaveRequestQuery,
+  LeaveRequestSummary,
   LeaveTypeDto,
   LegacyEmployeeRosterItem,
   PagedResult,
@@ -27,9 +29,25 @@ export const auth = {
   logout: () => api.post<void>('/auth/logout'),
 }
 
+const leaveRequestQuery = (q: LeaveRequestQuery) => {
+  const params = new URLSearchParams()
+  if (q.page !== undefined) params.set('page', String(q.page))
+  if (q.pageSize !== undefined) params.set('pageSize', String(q.pageSize))
+  if (q.status) params.set('status', q.status)
+  if (q.employeeId !== undefined) params.set('employeeId', String(q.employeeId))
+  if (q.leaveTypeName) params.set('leaveTypeName', q.leaveTypeName)
+  if (q.sortBy) params.set('sortBy', q.sortBy)
+  if (q.sortDescending !== undefined) params.set('sortDescending', String(q.sortDescending))
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
 export const leaveRequests = {
-  mine: () => api.get<LeaveRequestDto[]>('/leave-requests/mine'),
-  all: () => api.get<LeaveRequestDto[]>('/leave-requests'),
+  mine: (q: LeaveRequestQuery = {}) =>
+    api.get<PagedResult<LeaveRequestDto>>(`/leave-requests/mine${leaveRequestQuery(q)}`),
+  all: (q: LeaveRequestQuery = {}) =>
+    api.get<PagedResult<LeaveRequestDto>>(`/leave-requests${leaveRequestQuery(q)}`),
+  summary: () => api.get<LeaveRequestSummary>('/leave-requests/summary'),
   byId: (id: number) => api.get<LeaveRequestDto>(`/leave-requests/${id}`),
   create: (body: CreateLeaveRequestRequest) => api.post<LeaveRequestDto>('/leave-requests', body),
   holidays: (year: number) => api.get<string[]>(`/leave-requests/holidays?year=${year}`),

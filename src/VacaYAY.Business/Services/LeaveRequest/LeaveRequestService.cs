@@ -1,5 +1,6 @@
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using VacaYAY.Business.DTOs.Common;
 using VacaYAY.Business.DTOs.LeaveRequest;
 using VacaYAY.Business.Interfaces.LeaveRequest;
 using VacaYAY.Data;
@@ -18,23 +19,65 @@ public class LeaveRequestService : ILeaveRequestService
         _holidays = holidays;
     }
 
-    public async Task<IReadOnlyList<LeaveRequestDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResult<LeaveRequestDto>> GetPagedAsync(GetLeaveRequestsRequest request, CancellationToken cancellationToken = default)
     {
-        var requests = await WithNavigations(_db.LeaveRequests.AsNoTracking())
-            .OrderByDescending(r => r.CreatedAt)
+        var query = ApplyFilters(WithNavigations(_db.LeaveRequests.AsNoTracking()), request);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await ApplySort(query, request)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
-        return requests.Select(ToDto).ToList();
+        return new PagedResult<LeaveRequestDto>
+        {
+            Items = items.Select(ToDto).ToList(),
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+        };
     }
 
-    public async Task<IReadOnlyList<LeaveRequestDto>> GetMineAsync(int employeeId, CancellationToken cancellationToken = default)
+    public Task<PagedResult<LeaveRequestDto>> GetMinePagedAsync(int employeeId, GetLeaveRequestsRequest request, CancellationToken cancellationToken = default)
     {
-        var requests = await WithNavigations(_db.LeaveRequests.AsNoTracking())
-            .Where(r => r.EmployeeId == employeeId)
-            .OrderByDescending(r => r.CreatedAt)
+        // The caller's id wins over anything the client sent, so nobody can page another employee's requests.
+        request.EmployeeId = employeeId;
+        return GetPagedAsync(request, cancellationToken);
+    }
+
+    public async Task<LeaveRequestSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        var countByStatus = await _db.LeaveRequests
+            .AsNoTracking()
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);
 
-        return requests.Select(ToDto).ToList();
+        // WorkingDays isn't a column, so the days-per-type totals need the dates in memory.
+        var counted = await _db.LeaveRequests
+            .AsNoTracking()
+            .Where(r => r.Status == LeaveRequestStatus.Pending || r.Status == LeaveRequestStatus.Approved)
+            .Select(r => new { r.LeaveTypeId, Name = r.LeaveType!.Name, r.StartDate, r.EndDate })
+            .ToListAsync(cancellationToken);
+
+        var daysByType = counted
+            .GroupBy(r => new { r.LeaveTypeId, r.Name })
+            .Select(g => new LeaveTypeDaysDto
+            {
+                LeaveTypeId = g.Key.LeaveTypeId,
+                LeaveTypeName = g.Key.Name,
+                WorkingDays = g.Sum(r => CountWorkingDays(r.StartDate, r.EndDate)),
+            })
+            .OrderByDescending(t => t.WorkingDays)
+            .ToList();
+
+        return new LeaveRequestSummaryDto
+        {
+            TotalCount = countByStatus.Sum(s => s.Count),
+            CountByStatus = countByStatus.ToDictionary(s => s.Status.ToString(), s => s.Count),
+            DaysByType = daysByType,
+        };
     }
 
     public async Task<LeaveRequestDto?> GetByIdAsync(int id, int requestingUserId, UserRole role, CancellationToken cancellationToken = default)
@@ -190,6 +233,53 @@ public class LeaveRequestService : ILeaveRequestService
     //helper da vracam zaposlene i leavetype
     private static IQueryable<LeaveRequestEntity> WithNavigations(IQueryable<LeaveRequestEntity> query) =>
         query.Include(r => r.Employee).Include(r => r.LeaveType);
+
+    private static IQueryable<LeaveRequestEntity> ApplyFilters(IQueryable<LeaveRequestEntity> query, GetLeaveRequestsRequest request)
+    {
+        if (request.Status is not null)
+        {
+            query = query.Where(r => r.Status == request.Status);
+        }
+
+        if (request.EmployeeId is not null)
+        {
+            query = query.Where(r => r.EmployeeId == request.EmployeeId);
+        }
+
+        if (request.LeaveTypeName is not null)
+        {
+            query = query.Where(r => r.LeaveType!.Name == request.LeaveTypeName);
+        }
+
+        return query;
+    }
+
+    // Id is the tiebreaker on every branch — without it, equal keys shuffle between pages.
+    private static IQueryable<LeaveRequestEntity> ApplySort(IQueryable<LeaveRequestEntity> query, GetLeaveRequestsRequest request)
+    {
+        bool desc = request.SortDescending;
+
+        IOrderedQueryable<LeaveRequestEntity> sorted = request.SortBy switch
+        {
+            LeaveRequestSortField.StartDate => Order(query, r => r.StartDate, desc),
+            LeaveRequestSortField.EndDate => Order(query, r => r.EndDate, desc),
+            LeaveRequestSortField.CreatedAt => Order(query, r => r.CreatedAt, desc),
+            LeaveRequestSortField.EmployeeName => Order(query, r => r.Employee!.LastName, desc)
+                .ThenBy(r => r.Employee!.FirstName),
+            LeaveRequestSortField.Status => Order(query, r => r.Status, desc),
+            _ => query
+                .OrderBy(r => r.Status == LeaveRequestStatus.Pending ? 0 : 1)
+                .ThenByDescending(r => r.StartDate),
+        };
+
+        return sorted.ThenBy(r => r.Id);
+    }
+
+    private static IOrderedQueryable<LeaveRequestEntity> Order<TKey>(
+        IQueryable<LeaveRequestEntity> query,
+        System.Linq.Expressions.Expression<Func<LeaveRequestEntity, TKey>> key,
+        bool descending) =>
+        descending ? query.OrderByDescending(key) : query.OrderBy(key);
 
     private LeaveRequestDto ToDto(LeaveRequestEntity request)
     {

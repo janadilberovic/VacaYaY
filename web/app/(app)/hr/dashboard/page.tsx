@@ -1,15 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAllRequests } from '@/components/useAllRequests'
 import { ReviewModal } from '@/components/ReviewModal'
 import { HrRequestDetail } from '@/components/HrRequestDetail'
 import { Avatar, EmptyState } from '@/components/ui'
-import { employees as employeesApi } from '@/lib/endpoints'
+import { employees as employeesApi, leaveRequests } from '@/lib/endpoints'
 import { colorHex, leaveTypeLabel } from '@/lib/leave'
 import { range, workingDaysNoun } from '@/lib/dates'
 import { initialsFromName } from '@/lib/format'
-import type { LeaveRequestDto } from '@/lib/types'
+import type { LeaveRequestDto, LeaveRequestSummary } from '@/lib/types'
 
 function StatCard({
   label,
@@ -87,9 +87,21 @@ function Bar({
   )
 }
 
+const PENDING_PREVIEW = 8
+
+// The charts cover every request, so they come from the summary endpoint rather than
+// the paged list below them.
+const PENDING_QUERY = {
+  status: 'Pending' as const,
+  pageSize: PENDING_PREVIEW,
+  sortBy: 'StartDate' as const,
+  sortDescending: false,
+}
+
 export default function HrDashboardPage() {
-  const { requests, typeMap, loading, patch } = useAllRequests()
+  const { requests: pending, typeMap, loading, patch } = useAllRequests(PENDING_QUERY)
   const [counts, setCounts] = useState({ headcount: 0, archived: 0 })
+  const [summary, setSummary] = useState<LeaveRequestSummary | null>(null)
   const [detail, setDetail] = useState<LeaveRequestDto | null>(null)
   const [review, setReview] = useState<{
     req: LeaveRequestDto
@@ -106,37 +118,35 @@ export default function HrDashboardPage() {
         setCounts({ headcount: active.totalCount, archived: arch.totalCount }),
       )
       .catch(() => setCounts({ headcount: 0, archived: 0 }))
+
+    leaveRequests
+      .summary()
+      .then(setSummary)
+      .catch(() => setSummary(null))
   }, [])
 
-  const pending = requests.filter((r) => r.status === 'Pending')
   const { headcount, archived } = counts
+  const typeColors = useMemo(
+    () => new Map([...typeMap.values()].map((t) => [t.id, t.color])),
+    [typeMap],
+  )
 
-  const typeAgg = new Map<number, number>()
-  requests.forEach((r) => {
-    if (r.status === 'Rejected' || r.status === 'Cancelled') return
-    typeAgg.set(r.leaveTypeId, (typeAgg.get(r.leaveTypeId) ?? 0) + r.workingDays)
-  })
-  const typeMax = Math.max(1, ...typeAgg.values())
-  const typeChart = [...typeAgg.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([id, days]) => {
-      const t = typeMap.get(id)
-      return {
-        name: t ? leaveTypeLabel(t.name) : `#${id}`,
-        color: colorHex(t?.color),
-        days: String(days),
-        pct: `${Math.round((days / typeMax) * 100)}%`,
-      }
-    })
+  const typeMax = Math.max(1, ...(summary?.daysByType.map((t) => t.workingDays) ?? []))
+  const typeChart = (summary?.daysByType ?? []).map((t) => ({
+    name: leaveTypeLabel(t.leaveTypeName),
+    color: colorHex(typeColors.get(t.leaveTypeId)),
+    days: String(t.workingDays),
+    pct: `${Math.round((t.workingDays / typeMax) * 100)}%`,
+  }))
 
   const statusColors: Record<string, string> = {
     Pending: 'var(--pill-pending-fg)',
     Approved: 'var(--pill-approved-fg)',
     Rejected: 'var(--pill-rejected-fg)',
   }
-  const statusTotal = Math.max(1, requests.length)
+  const statusTotal = Math.max(1, summary?.totalCount ?? 0)
   const statusChart = (['Pending', 'Approved', 'Rejected'] as const).map((k) => {
-    const count = requests.filter((r) => r.status === k).length
+    const count = summary?.countByStatus[k] ?? 0
     return {
       label: k,
       count: String(count),
@@ -154,7 +164,11 @@ export default function HrDashboardPage() {
       <div
         style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 32 }}
       >
-        <StatCard label="Pending requests" value={pending.length} color="var(--pill-pending-fg)" />
+        <StatCard
+          label="Pending requests"
+          value={summary?.countByStatus.Pending ?? 0}
+          color="var(--pill-pending-fg)"
+        />
         <StatCard label="Headcount" value={headcount} />
         <StatCard label="Archived accounts" value={archived} color="var(--text3)" />
       </div>
@@ -193,7 +207,14 @@ export default function HrDashboardPage() {
         </div>
       </div>
 
-      <div style={{ fontSize: 15, fontWeight: 650, marginBottom: 14 }}>Pending review</div>
+      <div style={{ fontSize: 15, fontWeight: 650, marginBottom: 14 }}>
+        Pending review
+        {(summary?.countByStatus.Pending ?? 0) > PENDING_PREVIEW && (
+          <span style={{ color: 'var(--text3)', fontSize: 12.5, fontWeight: 500, marginLeft: 8 }}>
+            oldest {PENDING_PREVIEW} of {summary?.countByStatus.Pending}
+          </span>
+        )}
+      </div>
       {loading ? null : pending.length === 0 ? (
         <EmptyState title="All caught up" desc="No requests waiting for review." icon="✓" />
       ) : (

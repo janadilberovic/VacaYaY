@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VacaYAY.Api.Extensions;
+using VacaYAY.Business.DTOs.Common;
 using VacaYAY.Business.DTOs.LeaveRequest;
 using VacaYAY.Business.Interfaces.LeaveRequest;
 
@@ -14,27 +15,50 @@ public class LeaveRequestController : ControllerBase
 {
     private readonly ILeaveRequestService _leaveRequestService;
     private readonly IValidator<CreateLeaveRequestRequest> _createValidator;
+    private readonly IValidator<GetLeaveRequestsRequest> _listValidator;
 
     public LeaveRequestController(
         ILeaveRequestService leaveRequestService,
-        IValidator<CreateLeaveRequestRequest> createValidator)
+        IValidator<CreateLeaveRequestRequest> createValidator,
+        IValidator<GetLeaveRequestsRequest> listValidator)
     {
         _leaveRequestService = leaveRequestService;
         _createValidator = createValidator;
+        _listValidator = listValidator;
     }
 
     [HttpGet]
     [Authorize(Policy = "HrOnly")]
-    public async Task<ActionResult<IReadOnlyList<LeaveRequestDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<LeaveRequestDto>>> GetPaged([FromQuery] GetLeaveRequestsRequest request, CancellationToken cancellationToken)
     {
-        var result = await _leaveRequestService.GetAllAsync(cancellationToken);
+        var validation = await _listValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ToValidationProblem(validation);
+        }
+
+        var result = await _leaveRequestService.GetPagedAsync(request, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("summary")]
+    [Authorize(Policy = "HrOnly")]
+    public async Task<ActionResult<LeaveRequestSummaryDto>> GetSummary(CancellationToken cancellationToken)
+    {
+        var result = await _leaveRequestService.GetSummaryAsync(cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("mine")]
-    public async Task<ActionResult<IReadOnlyList<LeaveRequestDto>>> GetMine(CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<LeaveRequestDto>>> GetMine([FromQuery] GetLeaveRequestsRequest request, CancellationToken cancellationToken)
     {
-        var result = await _leaveRequestService.GetMineAsync(User.GetUserId(), cancellationToken);
+        var validation = await _listValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ToValidationProblem(validation);
+        }
+
+        var result = await _leaveRequestService.GetMinePagedAsync(User.GetUserId(), request, cancellationToken);
         return Ok(result);
     }
 

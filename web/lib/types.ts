@@ -55,6 +55,25 @@ export interface EmployeeQuery {
   archived?: boolean
 }
 
+export type LeaveRequestSortField =
+  'Default' | 'StartDate' | 'EndDate' | 'CreatedAt' | 'EmployeeName' | 'Status'
+
+export interface LeaveRequestQuery {
+  page?: number
+  pageSize?: number
+  status?: LeaveRequestStatus
+  employeeId?: number
+  leaveTypeName?: LeaveTypeName
+  sortBy?: LeaveRequestSortField
+  sortDescending?: boolean
+}
+
+export interface LeaveRequestSummary {
+  totalCount: number
+  countByStatus: Partial<Record<LeaveRequestStatus, number>>
+  daysByType: Array<{ leaveTypeId: number; leaveTypeName: LeaveTypeName; workingDays: number }>
+}
+
 export interface EmployeeDto {
   id: number
   firstName: string

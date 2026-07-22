@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
 import { ImportLegacyModal } from '@/components/ImportLegacyModal'
 import { ConfirmDialog, type ConfirmSpec } from '@/components/ConfirmDialog'
+import { Pagination } from '@/components/Pagination'
 import { Avatar } from '@/components/ui'
 import { useToast } from '@/state/toast'
 import { employees as employeesApi } from '@/lib/endpoints'
@@ -13,13 +14,6 @@ import type { EmployeeDto, PagedResult } from '@/lib/types'
 
 const PER_PAGE = 8
 const COLS = '1.5fr 1.7fr 1fr .8fr .7fr .8fr auto'
-
-// Server paging means the page count is unbounded — show a sliding window, not every page.
-function pageWindow(current: number, total: number, size = 7): number[] {
-  const start = Math.max(1, Math.min(current - Math.floor(size / 2), total - size + 1))
-  const end = Math.min(total, start + size - 1)
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
-}
 
 function StatusPill({ active }: { active: boolean }) {
   return (
@@ -225,61 +219,13 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {pageCount > 1 && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: 14,
-          }}
-        >
-          <div style={{ color: 'var(--text3)', fontSize: 12.5 }}>
-            {(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, totalCount)} of{' '}
-            {totalCount}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button
-              className="btn btn-ghost"
-              style={{ width: 30, height: 30, padding: 0 }}
-              disabled={current <= 1}
-              onClick={() => setPage(current - 1)}
-            >
-              ‹
-            </button>
-            {pageWindow(current, pageCount).map((p) => {
-              const on = p === current
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  style={{
-                    minWidth: 30,
-                    height: 30,
-                    border: `1px solid ${on ? 'var(--text)' : 'var(--border)'}`,
-                    borderRadius: 8,
-                    background: on ? 'var(--text)' : 'var(--surface)',
-                    color: on ? 'var(--bg)' : 'var(--text2)',
-                    cursor: 'pointer',
-                    fontSize: 12.5,
-                    fontWeight: 650,
-                  }}
-                >
-                  {p}
-                </button>
-              )
-            })}
-            <button
-              className="btn btn-ghost"
-              style={{ width: 30, height: 30, padding: 0 }}
-              disabled={current >= pageCount}
-              onClick={() => setPage(current + 1)}
-            >
-              ›
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={current}
+        pageSize={PER_PAGE}
+        pageCount={pageCount}
+        totalCount={totalCount}
+        onPage={setPage}
+      />
 
       {showImport && <ImportLegacyModal onClose={() => setShowImport(false)} onImported={reload} />}
       {showAdd && <AddEmployeeModal onClose={() => setShowAdd(false)} onCreated={reload} />}
