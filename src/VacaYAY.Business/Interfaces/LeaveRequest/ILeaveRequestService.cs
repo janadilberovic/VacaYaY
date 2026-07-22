@@ -13,6 +13,8 @@ public interface ILeaveRequestService
 
     Task<LeaveRequestDto?> GetByIdAsync(int id, int requestingUserId, UserRole role, CancellationToken cancellationToken = default);
 
+    Task<LeaveBalanceDto> GetBalanceAsync(int employeeId, CancellationToken cancellationToken = default);
+
     Task<CreateLeaveRequestResult> CreateAsync(int employeeId, CreateLeaveRequestRequest request, CancellationToken cancellationToken = default);
 
     Task<ReviewLeaveRequestResult> ApproveAsync(int id, int hrUserId, ReviewLeaveRequestRequest request, CancellationToken cancellationToken = default);
