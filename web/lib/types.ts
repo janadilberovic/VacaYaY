@@ -2,15 +2,7 @@ export type UserRole = 'Employee' | 'HR'
 
 export type LeaveRequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
 
-export type LeaveColor =
-  | 'Gray'
-  | 'Red'
-  | 'Orange'
-  | 'Yellow'
-  | 'Green'
-  | 'Blue'
-  | 'Purple'
-  | 'Pink'
+export type LeaveColor = 'Gray' | 'Red' | 'Orange' | 'Yellow' | 'Green' | 'Blue' | 'Purple' | 'Pink'
 
 export type LeaveTypeName =
   | 'Annual'
@@ -49,6 +41,20 @@ export interface AuthResponse {
   user: AuthUser | null
 }
 
+export interface PagedResult<T> {
+  items: T[]
+  page: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+}
+
+export interface EmployeeQuery {
+  page?: number
+  pageSize?: number
+  archived?: boolean
+}
+
 export interface EmployeeDto {
   id: number
   firstName: string
@@ -81,6 +87,28 @@ export interface CreateEmployeeRequest {
 export interface CreateEmployeeResponse {
   employee: EmployeeDto
   tempPassword: string
+}
+
+export interface LegacyEmployeeRosterItem {
+  legacyId: number
+  firstName: string
+  lastName: string
+  email: string
+  department: string | null
+  title: string | null
+  hiredOn: string | null
+  contractEnd: string | null
+  daysOff: number
+  alreadyImported: boolean
+}
+
+export interface ImportLegacyEmployeesResult {
+  imported: number
+  skipped: number
+  notFound: number
+  invalid: number
+  importedEmployees: EmployeeDto[]
+  roster: LegacyEmployeeRosterItem[]
 }
 
 export interface LeaveRequestDto {

@@ -1,10 +1,11 @@
+using VacaYAY.Business.DTOs.Common;
 using VacaYAY.Business.DTOs.Employee;
 
 namespace VacaYAY.Business.Interfaces.Employee;
 
 public interface IEmployeeService
 {
-    Task<IReadOnlyList<EmployeeDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<EmployeeDto>> GetPagedAsync(GetEmployeesRequest request, CancellationToken cancellationToken = default);
 
     Task<EmployeeDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 

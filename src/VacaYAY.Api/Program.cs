@@ -12,10 +12,12 @@ using Microsoft.OpenApi.Models;
 using VacaYAY.Business.DTOs.Auth;
 using VacaYAY.Business.Interfaces.Auth;
 using VacaYAY.Business.Interfaces.Employee;
+using VacaYAY.Business.Interfaces.EmployeeImport;
 using VacaYAY.Business.Interfaces.LeaveRequest;
 using VacaYAY.Business.Interfaces.LeaveType;
 using VacaYAY.Business.Services.Auth;
 using VacaYAY.Business.Services.Employee;
+using VacaYAY.Business.Services.EmployeeImport;
 using VacaYAY.Business.Services.LeaveRequest;
 using VacaYAY.Business.Services.LeaveType;
 using VacaYAY.Business.Validators.Auth;
@@ -92,6 +94,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILeaveTypeService, LeaveTypeService>();
 builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<ILegacyEmployeeService, LegacyEmployeeService>();
+builder.Services.AddScoped<IEmployeeImportService, EmployeeImportService>();
 builder.Services.AddSingleton<IHolidayProvider, SerbianHolidayProvider>(); // thread-safe ConcurrentDictionary cache; no DbContext
 builder.Services.AddSingleton<ITokenDenylist, TokenDenylist>(); // singleton: revocations must outlive requests
 

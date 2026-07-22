@@ -6,8 +6,12 @@ import type {
   CreateLeaveRequestRequest,
   CreateLeaveTypeRequest,
   EmployeeDto,
+  EmployeeQuery,
+  ImportLegacyEmployeesResult,
   LeaveRequestDto,
   LeaveTypeDto,
+  LegacyEmployeeRosterItem,
+  PagedResult,
   UpdateLeaveTypeRequest,
 } from './types'
 
@@ -27,8 +31,7 @@ export const leaveRequests = {
   mine: () => api.get<LeaveRequestDto[]>('/leave-requests/mine'),
   all: () => api.get<LeaveRequestDto[]>('/leave-requests'),
   byId: (id: number) => api.get<LeaveRequestDto>(`/leave-requests/${id}`),
-  create: (body: CreateLeaveRequestRequest) =>
-    api.post<LeaveRequestDto>('/leave-requests', body),
+  create: (body: CreateLeaveRequestRequest) => api.post<LeaveRequestDto>('/leave-requests', body),
   holidays: (year: number) => api.get<string[]>(`/leave-requests/holidays?year=${year}`),
   approve: (id: number, hrComment: string | null) =>
     api.post<LeaveRequestDto>(`/leave-requests/${id}/approve`, { hrComment }),
@@ -38,12 +41,21 @@ export const leaveRequests = {
 }
 
 export const employees = {
-  all: () => api.get<EmployeeDto[]>('/employees'),
+  list: (q: EmployeeQuery = {}) => {
+    const params = new URLSearchParams()
+    if (q.page !== undefined) params.set('page', String(q.page))
+    if (q.pageSize !== undefined) params.set('pageSize', String(q.pageSize))
+    if (q.archived) params.set('archived', 'true')
+    const qs = params.toString()
+    return api.get<PagedResult<EmployeeDto>>(`/employees${qs ? `?${qs}` : ''}`)
+  },
   me: () => api.get<EmployeeDto>('/employees/me'),
-  create: (body: CreateEmployeeRequest) =>
-    api.post<CreateEmployeeResponse>('/employees', body),
+  create: (body: CreateEmployeeRequest) => api.post<CreateEmployeeResponse>('/employees', body),
   archive: (id: number) => api.del<void>(`/employees/${id}`),
   restore: (id: number) => api.post<EmployeeDto>(`/employees/${id}/restore`),
+  legacyRoster: () => api.get<LegacyEmployeeRosterItem[]>('/employees/legacy'),
+  importLegacy: (legacyIds: number[]) =>
+    api.post<ImportLegacyEmployeesResult>('/employees/import-legacy', { legacyIds }),
 }
 
 // Leave-type create/update are [FromForm] on the API — send urlencoded, not JSON.

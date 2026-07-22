@@ -1,17 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
+import { ImportLegacyModal } from '@/components/ImportLegacyModal'
 import { ConfirmDialog, type ConfirmSpec } from '@/components/ConfirmDialog'
 import { Avatar } from '@/components/ui'
 import { useToast } from '@/state/toast'
 import { employees as employeesApi } from '@/lib/endpoints'
 import { initials } from '@/lib/format'
 import { fmt } from '@/lib/dates'
-import type { EmployeeDto } from '@/lib/types'
+import type { EmployeeDto, PagedResult } from '@/lib/types'
 
 const PER_PAGE = 8
 const COLS = '1.5fr 1.7fr 1fr .8fr .7fr .8fr auto'
+
+// Server paging means the page count is unbounded — show a sliding window, not every page.
+function pageWindow(current: number, total: number, size = 7): number[] {
+  const start = Math.max(1, Math.min(current - Math.floor(size / 2), total - size + 1))
+  const end = Math.min(total, start + size - 1)
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+}
 
 function StatusPill({ active }: { active: boolean }) {
   return (
@@ -30,22 +38,60 @@ function StatusPill({ active }: { active: boolean }) {
 
 function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: COLS, gap: 12, alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--border)', fontSize: 13, opacity: e.isActive ? 1 : 0.6 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: COLS,
+        gap: 12,
+        alignItems: 'center',
+        padding: '12px 18px',
+        borderBottom: '1px solid var(--border)',
+        fontSize: 13,
+        opacity: e.isActive ? 1 : 0.6,
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
         <Avatar text={initials(e.firstName, e.lastName)} />
-        <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: e.isActive ? 'none' : 'line-through' }}>
+        <span
+          style={{
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            textDecoration: e.isActive ? 'none' : 'line-through',
+          }}
+        >
           {e.firstName} {e.lastName}
         </span>
       </div>
-      <div style={{ color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.email}</div>
+      <div
+        style={{
+          color: 'var(--text2)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {e.email}
+      </div>
       <div style={{ color: 'var(--text2)' }}>{e.department || '—'}</div>
       <div style={{ color: 'var(--text2)' }}>{e.hireDate ? fmt(e.hireDate, false) : '—'}</div>
       <div style={{ color: 'var(--text2)' }}>{e.daysOff} days</div>
-      <div><StatusPill active={e.isActive} /></div>
+      <div>
+        <StatusPill active={e.isActive} />
+      </div>
       <button
         onClick={onAct}
         className="btn"
-        style={{ width: 64, background: 'none', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 7, padding: '5px 0', fontSize: 11.5 }}
+        style={{
+          width: 64,
+          background: 'none',
+          border: '1px solid var(--border)',
+          color: 'var(--text2)',
+          borderRadius: 7,
+          padding: '5px 0',
+          fontSize: 11.5,
+        }}
       >
         {e.isActive ? 'Archive' : 'Restore'}
       </button>
@@ -55,35 +101,52 @@ function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
 
 export default function EmployeesPage() {
   const { toast } = useToast()
-  const [list, setList] = useState<EmployeeDto[]>([])
+  const [data, setData] = useState<PagedResult<EmployeeDto> | null>(null)
   const [page, setPage] = useState(1)
+  const [archived, setArchived] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null)
 
+  const load = useCallback(async () => {
+    try {
+      const res = await employeesApi.list({ page, pageSize: PER_PAGE, archived })
+      // Archiving the last row on the last page leaves us past the end — step back.
+      if (res.items.length === 0 && res.page > 1) {
+        setPage(Math.max(1, res.totalPages))
+        return
+      }
+      setData(res)
+    } catch {
+      setData(null)
+    }
+  }, [page, archived])
+
   useEffect(() => {
-    employeesApi.all().then(setList).catch(() => setList([]))
-  }, [])
+    load()
+  }, [load])
 
-  const active = list.filter((e) => e.isActive)
-  const archived = list.filter((e) => !e.isActive)
-  const pageCount = Math.max(1, Math.ceil(active.length / PER_PAGE))
-  const current = Math.min(page, pageCount)
-  const pageRows = active.slice((current - 1) * PER_PAGE, current * PER_PAGE)
-
-  function replace(updated: EmployeeDto) {
-    setList((l) => l.map((e) => (e.id === updated.id ? updated : e)))
+  function reload() {
+    if (page === 1) load()
+    else setPage(1)
   }
+
+  const rows = data?.items ?? []
+  const totalCount = data?.totalCount ?? 0
+  const pageCount = Math.max(1, data?.totalPages ?? 1)
+  const current = data?.page ?? page
 
   function askArchive(e: EmployeeDto) {
     setConfirm({
       title: 'Archive this employee?',
-      message: 'Their account will be deactivated and hidden from active lists. You can restore it anytime.',
+      message:
+        'Their account will be deactivated and hidden from active lists. You can restore it anytime.',
       confirmLabel: 'Archive',
       onConfirm: async () => {
         setConfirm(null)
         try {
           await employeesApi.archive(e.id)
-          replace({ ...e, isActive: false })
+          await load()
           toast('Employee archived.')
         } catch {
           toast('Could not archive employee.', 'error')
@@ -94,8 +157,8 @@ export default function EmployeesPage() {
 
   async function restore(e: EmployeeDto) {
     try {
-      const updated = await employeesApi.restore(e.id)
-      replace(updated)
+      await employeesApi.restore(e.id)
+      await load()
       toast('Employee restored.')
     } catch {
       toast('Could not restore employee.', 'error')
@@ -106,63 +169,120 @@ export default function EmployeesPage() {
     <div style={{ animation: 'fade .25s' }}>
       <div className="page-head">
         <div className="page-h">Employees</div>
-        <button className="btn btn-primary" onClick={() => setShowAdd(true)}>＋ Add employee</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            className="btn"
+            style={{
+              background: 'none',
+              border: '1px solid var(--border)',
+              color: archived ? 'var(--text)' : 'var(--text2)',
+            }}
+            onClick={() => {
+              setArchived((a) => !a)
+              setPage(1)
+            }}
+          >
+            {archived ? 'Show active' : 'Show archived'}
+          </button>
+          <button
+            className="btn"
+            style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text2)' }}
+            onClick={() => setShowImport(true)}
+          >
+            Load existing users from old system
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+            ＋ Add employee
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: COLS, gap: 12, alignItems: 'center', padding: '10px 18px', borderBottom: '1px solid var(--border)' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: COLS,
+            gap: 12,
+            alignItems: 'center',
+            padding: '10px 18px',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
           {['Name', 'Email', 'Department', 'Hired', 'Balance', 'Status'].map((h) => (
-            <div key={h} className="section-label" style={{ fontSize: 11 }}>{h}</div>
+            <div key={h} className="section-label" style={{ fontSize: 11 }}>
+              {h}
+            </div>
           ))}
           <div style={{ width: 64 }} />
         </div>
-        {pageRows.map((e) => (
-          <Row key={e.id} e={e} onAct={() => askArchive(e)} />
+        {rows.map((e) => (
+          <Row key={e.id} e={e} onAct={() => (archived ? restore(e) : askArchive(e))} />
         ))}
+        {rows.length === 0 && (
+          <div style={{ padding: '18px', color: 'var(--text3)', fontSize: 13 }}>
+            {archived ? 'No archived accounts.' : 'No employees yet.'}
+          </div>
+        )}
       </div>
 
       {pageCount > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 14,
+          }}
+        >
           <div style={{ color: 'var(--text3)', fontSize: 12.5 }}>
-            {(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, active.length)} of {active.length}
+            {(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, totalCount)} of{' '}
+            {totalCount}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button className="btn btn-ghost" style={{ width: 30, height: 30, padding: 0 }} disabled={current <= 1} onClick={() => setPage(current - 1)}>‹</button>
-            {Array.from({ length: pageCount }).map((_, i) => {
-              const p = i + 1
+            <button
+              className="btn btn-ghost"
+              style={{ width: 30, height: 30, padding: 0 }}
+              disabled={current <= 1}
+              onClick={() => setPage(current - 1)}
+            >
+              ‹
+            </button>
+            {pageWindow(current, pageCount).map((p) => {
               const on = p === current
               return (
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  style={{ minWidth: 30, height: 30, border: `1px solid ${on ? 'var(--text)' : 'var(--border)'}`, borderRadius: 8, background: on ? 'var(--text)' : 'var(--surface)', color: on ? 'var(--bg)' : 'var(--text2)', cursor: 'pointer', fontSize: 12.5, fontWeight: 650 }}
+                  style={{
+                    minWidth: 30,
+                    height: 30,
+                    border: `1px solid ${on ? 'var(--text)' : 'var(--border)'}`,
+                    borderRadius: 8,
+                    background: on ? 'var(--text)' : 'var(--surface)',
+                    color: on ? 'var(--bg)' : 'var(--text2)',
+                    cursor: 'pointer',
+                    fontSize: 12.5,
+                    fontWeight: 650,
+                  }}
                 >
                   {p}
                 </button>
               )
             })}
-            <button className="btn btn-ghost" style={{ width: 30, height: 30, padding: 0 }} disabled={current >= pageCount} onClick={() => setPage(current + 1)}>›</button>
+            <button
+              className="btn btn-ghost"
+              style={{ width: 30, height: 30, padding: 0 }}
+              disabled={current >= pageCount}
+              onClick={() => setPage(current + 1)}
+            >
+              ›
+            </button>
           </div>
         </div>
       )}
 
-      {archived.length > 0 && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '32px 0 14px' }}>
-            <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--text2)' }}>Archived accounts</span>
-            <span className="pill" style={{ background: 'var(--surface2)', color: 'var(--text3)' }}>{archived.length}</span>
-          </div>
-          <div className="card" style={{ overflow: 'hidden' }}>
-            {archived.map((e) => (
-              <Row key={e.id} e={e} onAct={() => restore(e)} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {showAdd && (
-        <AddEmployeeModal onClose={() => setShowAdd(false)} onCreated={(e) => setList((l) => [e, ...l])} />
-      )}
+      {showImport && <ImportLegacyModal onClose={() => setShowImport(false)} onImported={reload} />}
+      {showAdd && <AddEmployeeModal onClose={() => setShowAdd(false)} onCreated={reload} />}
       {confirm && <ConfirmDialog spec={confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )

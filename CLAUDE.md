@@ -70,8 +70,11 @@ lives in `Program.cs`.
 
 ## Guardrails
 
-- **Do** respect the `Api → Business → Data → Domain` dependency direction; keep entities inside
-  Business/Data (DTOs cross the boundary).
+- **Do** respect the `Api → Business → Data → Domain` dependency direction. Entities live in
+  `VacaYAY.Domain` — a new entity goes there, never in Business, Data, or Api. Entities must not
+  leak past Business: services return DTOs, and only DTOs cross into Api.
+- **Do** use the single existing `DbContext` — `VacaYAYDbContext` in `VacaYAY.Data`. Never create a
+  second `DbContext` (and never one in Api); add a `DbSet` to the existing one instead.
 - **Do** keep controllers thin — logic goes in Business services.
 - **Don't** create or apply EF migrations (`dotnet ef migrations add`, `dotnet ef database update`) —
   migrations are owned/managed outside Claude in this project. You may edit the EF model (entities,
