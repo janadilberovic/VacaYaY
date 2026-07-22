@@ -4,7 +4,10 @@
     "allow": [
       "Bash(dotnet build)",
       "Bash(dotnet build *)",
-      "mcp__vacayay-mysql__mysql_query"
+      "mcp__vacayay-mysql__mysql_query",
+      "mcp__github__get_pull_request",
+      "mcp__github__list_pull_requests",
+      "mcp__github__search_pull_requests"
     ]
   },
   "hooks": {

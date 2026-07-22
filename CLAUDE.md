@@ -32,6 +32,9 @@ lives in `Program.cs`.
   throws if it's missing or < 32 bytes):
   `dotnet user-secrets set "Jwt:SigningKey" "<32+ byte value>" --project src/VacaYAY.Api`
 - `UserSecretsId` is on the Api project.
+- `GITHUB_PAT` — fine-grained GitHub token (Contents + Pull requests, write) used by the `github`
+  MCP server for `/pr`. **Environment variable only**, never in a file; set it as a Windows User
+  variable and restart Claude Code.
 
 ## Conventions
 
