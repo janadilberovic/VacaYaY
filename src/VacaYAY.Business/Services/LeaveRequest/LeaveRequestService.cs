@@ -95,17 +95,28 @@ public class LeaveRequestService : ILeaveRequestService
 
     public async Task<CreateLeaveRequestResult> CreateAsync(int employeeId, CreateLeaveRequestRequest request, CancellationToken cancellationToken = default)
     {
-
-        bool typeExists = await _db.LeaveTypes.AnyAsync(t => t.Id == request.LeaveTypeId, cancellationToken);
-        if (!typeExists) { return CreateLeaveRequestResult.LeaveTypeNotFound; }
+        var leaveType = await _db.LeaveTypes.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == request.LeaveTypeId, cancellationToken);
+        if (leaveType is null) { return CreateLeaveRequestResult.LeaveTypeNotFound; }
 
         // Reject a range that intersects one of the employee's pending/approved requests.
         bool overlaps = await _db.LeaveRequests.AnyAsync(r =>
             r.EmployeeId == employeeId &&
             (r.Status == LeaveRequestStatus.Pending || r.Status == LeaveRequestStatus.Approved) &&
             r.StartDate <= request.EndDate && r.EndDate >= request.StartDate,
-            cancellationToken); 
+            cancellationToken);
         if (overlaps) { return CreateLeaveRequestResult.Overlap; }
+
+        if (leaveType.CountsAgainstBalance)
+        {
+            var balance = await GetBalanceAsync(employeeId, cancellationToken);
+            int requestedDays = CountWorkingDays(request.StartDate, request.EndDate);
+
+            if (requestedDays > balance.RemainingDays)
+            {
+                return CreateLeaveRequestResult.InsufficientBalance(requestedDays, balance.RemainingDays);
+            }
+        }
 
         var entity = request.Adapt<LeaveRequestEntity>();
         entity.EmployeeId = employeeId;
@@ -222,6 +233,33 @@ public class LeaveRequestService : ILeaveRequestService
         await transaction.CommitAsync(cancellationToken);
 
         return ReviewLeaveRequestResult.Reviewed(ToDto(leaveRequest));
+    }
+
+    public async Task<LeaveBalanceDto> GetBalanceAsync(int employeeId, CancellationToken cancellationToken = default)
+    {
+        int daysOff = await _db.Users
+            .Where(u => u.Id == employeeId)
+            .Select(u => u.DaysOff)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // Approved requests are already deducted from DaysOff; only pending ones still need reserving.
+        // WorkingDays isn't a column, so the dates come back in memory to be counted.
+        var pending = await _db.LeaveRequests
+            .AsNoTracking()
+            .Where(r => r.EmployeeId == employeeId
+                && r.Status == LeaveRequestStatus.Pending
+                && r.LeaveType!.CountsAgainstBalance)
+            .Select(r => new { r.StartDate, r.EndDate })
+            .ToListAsync(cancellationToken);
+
+        int pendingDays = pending.Sum(r => CountWorkingDays(r.StartDate, r.EndDate));
+
+        return new LeaveBalanceDto
+        {
+            DaysOff = daysOff,
+            PendingDays = pendingDays,
+            RemainingDays = daysOff - pendingDays,
+        };
     }
 
     public Task<IReadOnlyList<DateOnly>> GetHolidaysAsync(int year, CancellationToken cancellationToken = default)

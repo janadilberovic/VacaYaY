@@ -62,6 +62,13 @@ public class LeaveRequestController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("balance")]
+    public async Task<ActionResult<LeaveBalanceDto>> GetBalance(CancellationToken cancellationToken)
+    {
+        var result = await _leaveRequestService.GetBalanceAsync(User.GetUserId(), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("holidays")]
     public async Task<ActionResult<IReadOnlyList<DateOnly>>> GetHolidays([FromQuery] int? year, CancellationToken cancellationToken)
     {
@@ -105,6 +112,10 @@ public class LeaveRequestController : ControllerBase
             CreateLeaveRequestStatus.LeaveTypeNotFound => Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Leave type not found."),
+            CreateLeaveRequestStatus.InsufficientBalance => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Insufficient leave balance.",
+                detail: $"This request needs {result.RequestedDays} working days but only {result.RemainingDays} remain."),
             _ => CreatedAtAction(nameof(GetById), new { id = result.Dto!.Id }, result.Dto),
         };
     }

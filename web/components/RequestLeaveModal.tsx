@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Modal, ModalHeader } from './Modal'
 import { Calendar } from './Calendar'
 import { ErrorBanner } from './ui'
-import { useAuth } from '@/state/auth'
 import { useToast } from '@/state/toast'
 import { useLeaveModal } from '@/state/leaveModal'
 import { leaveRequests, leaveTypes as leaveTypesApi } from '@/lib/endpoints'
@@ -20,7 +19,7 @@ import {
   workingDaysNoun,
 } from '@/lib/dates'
 import { useHolidays } from '@/lib/holidays'
-import type { LeaveTypeDto } from '@/lib/types'
+import type { LeaveBalance, LeaveTypeDto } from '@/lib/types'
 
 interface Errors {
   type?: string
@@ -30,7 +29,6 @@ interface Errors {
 }
 
 export function RequestLeaveModal() {
-  const { user } = useAuth()
   const { toast } = useToast()
   const { isOpen, close, notifyCreated } = useLeaveModal()
 
@@ -42,6 +40,7 @@ export function RequestLeaveModal() {
   const [errs, setErrs] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
   const [bookedDays, setBookedDays] = useState<Set<string>>(new Set())
+  const [balance, setBalance] = useState<LeaveBalance | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -52,6 +51,11 @@ export function RequestLeaveModal() {
     setErrs({})
     setSubmitting(false)
     setBookedDays(new Set())
+    setBalance(null)
+    leaveRequests
+      .balance()
+      .then(setBalance)
+      .catch(() => setBalance(null))
     leaveTypesApi
       .all()
       .then(setTypes)
@@ -82,10 +86,13 @@ export function RequestLeaveModal() {
   const holidays = useHolidays(previewYears)
   const previewDays =
     start && end && end >= start ? estimateWorkingDays(start, end, holidays) : null
-  // Provisional warning only — the authoritative check is ApproveAsync in LeaveRequestService
-  // (deducts when DaysOff >= workingDays for CountsAgainstBalance types). Keep this in sync with it.
+  // Provisional warning only — CreateAsync in LeaveRequestService is the authoritative check.
+  // remainingDays comes from the API and already nets off pending requests.
   const overBalance =
-    previewDays !== null && !!selected?.countsAgainstBalance && !!user && previewDays > user.daysOff
+    previewDays !== null &&
+    !!selected?.countsAgainstBalance &&
+    !!balance &&
+    previewDays > balance.remainingDays
 
   if (!isOpen) return null
 
@@ -132,9 +139,7 @@ export function RequestLeaveModal() {
       close()
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 409)
-          setErrs({ form: 'This overlaps an existing request. Adjust the dates and try again.' })
-        else setErrs({ form: err.firstMessage })
+        setErrs({ form: err.firstMessage })
       } else {
         setErrs({ form: 'Something went wrong. Please try again.' })
       }
@@ -260,8 +265,10 @@ export function RequestLeaveModal() {
               fontSize: 12.5,
             }}
           >
-            This exceeds your remaining balance of {user!.daysOff} days — the request will likely be
-            rejected.
+            This exceeds your remaining balance of {balance!.remainingDays} days
+            {balance!.pendingDays > 0 &&
+              ` (${balance!.pendingDays} already held by pending requests)`}
+            .
           </div>
         )}
 

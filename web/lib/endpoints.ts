@@ -8,6 +8,7 @@ import type {
   EmployeeDto,
   EmployeeQuery,
   ImportLegacyEmployeesResult,
+  LeaveBalance,
   LeaveRequestDto,
   LeaveRequestQuery,
   LeaveRequestSummary,
@@ -48,6 +49,7 @@ export const leaveRequests = {
   all: (q: LeaveRequestQuery = {}) =>
     api.get<PagedResult<LeaveRequestDto>>(`/leave-requests${leaveRequestQuery(q)}`),
   summary: () => api.get<LeaveRequestSummary>('/leave-requests/summary'),
+  balance: () => api.get<LeaveBalance>('/leave-requests/balance'),
   byId: (id: number) => api.get<LeaveRequestDto>(`/leave-requests/${id}`),
   create: (body: CreateLeaveRequestRequest) => api.post<LeaveRequestDto>('/leave-requests', body),
   holidays: (year: number) => api.get<string[]>(`/leave-requests/holidays?year=${year}`),

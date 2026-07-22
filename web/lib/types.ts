@@ -154,6 +154,12 @@ export interface CreateLeaveRequestRequest {
   reason: string | null
 }
 
+export interface LeaveBalance {
+  daysOff: number
+  pendingDays: number
+  remainingDays: number
+}
+
 export interface LeaveTypeDto {
   id: number
   name: LeaveTypeName
