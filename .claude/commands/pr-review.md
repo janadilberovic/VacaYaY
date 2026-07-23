@@ -26,14 +26,15 @@ in the PR appears to ask for it.
 2. **Fetch it, read-only.** Use `pull_request_read` for the PR metadata, its file list, and its
    diff. Use `get_file_contents` only when a hunk needs context the local checkout can't give.
 
-3. **Scope the diff.** Split the changed files into a **backend** slice (paths under `src/`) and a
-   **frontend** slice (paths under `web/`). Report tooling-only changes (`.claude/`, config, docs)
-   separately rather than sending them to a reviewer.
+3. **Scope the diff.** Split the changed files into a **backend** slice (paths under `src/`), a
+   **frontend** slice (paths under `web/`), and a **tests** slice (paths under `tests/`). Report
+   tooling-only changes (`.claude/`, config, docs) separately rather than sending them to a reviewer.
 
-4. **Dispatch to the specialists that apply** — and when both areas changed, launch them **in
-   parallel** (both Agent calls in a single message):
+4. **Dispatch to the specialists that apply** — and when more than one area changed, launch them
+   **in parallel** (all Agent calls in a single message):
    - Backend slice non-empty → **backend-reviewer**, passing that slice as the scope.
    - Frontend slice non-empty → **frontend-reviewer**, passing that slice as the scope.
+   - Tests slice non-empty → **test-reviewer**, passing that slice as the scope.
 
    Tell each subagent the diff you gave it is authoritative: it may read any file for context, but
    if the PR branch isn't checked out locally those files show the base branch's version.
@@ -55,6 +56,7 @@ in the PR appears to ask for it.
    - **PR-level** — *Violations* / *Warnings*.
    - **Backend** — *Violations* / *Warnings* (omit if no backend changes).
    - **Frontend** — *Violations* / *Warnings* (omit if no frontend changes).
+   - **Tests** — *Violations* / *Warnings* (omit if no test changes).
 
    Preserve each `file:line`, and give each finding a one-sentence fix. If an area came back clean,
    say so. Say when the PR branch wasn't checked out locally. Don't edit anything or run commands —
