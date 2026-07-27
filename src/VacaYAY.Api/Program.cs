@@ -63,8 +63,10 @@ builder.Services.AddSwaggerGen(options =>
         [bearerScheme] = Array.Empty<string>(),
     });
 });
+// Pinned instead of ServerVersion.AutoDetect: AutoDetect opens a connection during startup,
+// which makes boot fail whenever the (remote, sleepable) DB is unreachable.
 builder.Services.AddDbContext<VacaYAYDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 35))));
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
@@ -165,12 +167,18 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Hosts like Render terminate TLS at their proxy, so redirecting inside the app loops forever.
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors(SpaCorsPolicy);
 
 app.UseAuthentication(); // must come before UseAuthorization
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapControllers();
 
