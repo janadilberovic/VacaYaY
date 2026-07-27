@@ -17,4 +17,8 @@
     <ProjectReference Include="..\VacaYAY.Domain\VacaYAY.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="VacaYAY.UnitTests" />
+  </ItemGroup>
+
 </Project>
