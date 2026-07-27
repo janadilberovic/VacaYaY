@@ -75,3 +75,5 @@ Desktop.ini
 *.pidb
 *.svclog
 _ReSharper*/
+.vercel
+.env*
