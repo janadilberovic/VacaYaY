@@ -148,6 +148,7 @@ export default function HrRequestsPage() {
             return (
               <div
                 key={r.id}
+                data-testid={`request-row-${r.id}`}
                 onClick={() => setDetail(r)}
                 style={{
                   background: 'var(--surface)',
