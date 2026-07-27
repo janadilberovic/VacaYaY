@@ -79,6 +79,7 @@ jobs:
       # .vercel/ is gitignored, so the CLI gets the project identity from here instead.
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -94,15 +95,15 @@ jobs:
       - name: Deploy preview
         if: github.event_name == 'pull_request'
         run: |
-          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel build --token=${{ secrets.VERCEL_TOKEN }}
-          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          vercel pull --yes --environment=preview
+          vercel build
+          url=$(vercel deploy --prebuilt)
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Deploy production
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          vercel pull --yes --environment=production
+          vercel build --prod
+          url=$(vercel deploy --prebuilt --prod)
           echo "Production: $url" >> "$GITHUB_STEP_SUMMARY"
