@@ -66,7 +66,7 @@ builder.Services.AddSwaggerGen(options =>
 // Pinned instead of ServerVersion.AutoDetect: AutoDetect opens a connection during startup,
 // which makes boot fail whenever the (remote, sleepable) DB is unreachable.
 builder.Services.AddDbContext<VacaYAYDbContext>(options =>
-    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 35))));
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 4, 8))));
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
