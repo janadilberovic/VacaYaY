@@ -7,7 +7,8 @@ let created: number | null = null
 async function openPendingList(page: Page) {
   await page.goto('/hr/requests')
   await page.getByRole('button', { name: 'Pending', exact: true }).click()
-  await page.locator('select').last().selectOption({ label: 'Submitted — newest' })
+  await page.getByRole('combobox', { name: 'Sort by' }).click()
+  await page.getByRole('option', { name: 'Submitted — newest' }).click()
 }
 
 test.afterEach(async ({ page }) => {

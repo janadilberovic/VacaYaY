@@ -53,7 +53,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder="name@ingsoftware.com"
+            placeholder="name@vacayay.com"
           />
           <label htmlFor="l-pw" className="field-label">Password</label>
           <input

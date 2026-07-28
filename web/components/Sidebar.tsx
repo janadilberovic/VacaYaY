@@ -12,7 +12,7 @@ interface NavItem {
   onClick?: () => void
 }
 
-export function Sidebar() {
+export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { user, logout } = useAuth()
   const { theme, toggle } = useTheme()
   const leaveModal = useLeaveModal()
@@ -42,7 +42,11 @@ export function Sidebar() {
       return (
         <button
           key={it.label}
-          onClick={() => (it.href ? router.push(it.href) : it.onClick?.())}
+          onClick={() => {
+            if (it.href) router.push(it.href)
+            else it.onClick?.()
+            onNavigate()
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -73,17 +77,15 @@ export function Sidebar() {
   }
 
   return (
-    <div
-      style={{
-        width: 236,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'var(--surface)',
-        borderRight: '1px solid var(--border)',
-      }}
-    >
-      <div style={{ padding: '20px 20px 14px', fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em' }}>
+    <div className={open ? 'sidebar open' : 'sidebar'}>
+      <div
+        style={{
+          padding: '20px 20px 14px',
+          fontSize: 17,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+        }}
+      >
         Vaca<span style={{ color: 'var(--accent)' }}>YAY</span>
       </div>
 

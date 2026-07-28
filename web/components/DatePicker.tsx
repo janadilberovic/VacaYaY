@@ -49,8 +49,14 @@ export function DatePicker({ value, onChange, id, placeholder = 'Select a date' 
     setView((v) => {
       let m = v.m + delta
       let y = v.y
-      if (m < 0) { m = 11; y-- }
-      if (m > 11) { m = 0; y++ }
+      if (m < 0) {
+        m = 11
+        y--
+      }
+      if (m > 11) {
+        m = 0
+        y++
+      }
       return { y, m }
     })
   }
@@ -66,7 +72,9 @@ export function DatePicker({ value, onChange, id, placeholder = 'Select a date' 
 
   const dows: string[] = []
   for (let i = 0; i < 7; i++) {
-    dows.push(new Date(2026, 0, 5 + i).toLocaleDateString(LOCALE, { weekday: 'short' }).replace('.', ''))
+    dows.push(
+      new Date(2026, 0, 5 + i).toLocaleDateString(LOCALE, { weekday: 'short' }).replace('.', ''),
+    )
   }
 
   const cells: React.ReactNode[] = []
@@ -126,20 +134,14 @@ export function DatePicker({ value, onChange, id, placeholder = 'Select a date' 
       <button
         id={id}
         type="button"
-        className="input"
+        className="input select-trigger"
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          cursor: 'pointer',
-          textAlign: 'left',
-          color: selected ? 'var(--text)' : 'var(--text3)',
-        }}
+        style={{ color: selected ? 'var(--text)' : 'var(--text3)' }}
       >
         <span>{selected ? fmt(selected) : placeholder}</span>
-        <span aria-hidden style={{ color: 'var(--text3)', fontSize: 13 }}>▾</span>
+        <span aria-hidden style={{ color: 'var(--text3)', fontSize: 13 }}>
+          ▾
+        </span>
       </button>
 
       {open && (
@@ -158,12 +160,23 @@ export function DatePicker({ value, onChange, id, placeholder = 'Select a date' 
             boxShadow: 'var(--shadow)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <button type="button" style={navBtn} onClick={() => shift(-1)}>‹</button>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 8,
+            }}
+          >
+            <button type="button" style={navBtn} onClick={() => shift(-1)}>
+              ‹
+            </button>
             <div style={{ fontSize: 12.5, fontWeight: 650, textTransform: 'capitalize' }}>
               {first.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })}
             </div>
-            <button type="button" style={navBtn} onClick={() => shift(1)}>›</button>
+            <button type="button" style={navBtn} onClick={() => shift(1)}>
+              ›
+            </button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 2 }}>
             {dows.map((w) => (
@@ -183,10 +196,16 @@ export function DatePicker({ value, onChange, id, placeholder = 'Select a date' 
               </div>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 1 }}>{cells}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 1 }}>
+            {cells}
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <button type="button" style={link} onClick={() => pick('')}>Clear</button>
-            <button type="button" style={link} onClick={() => pick(today)}>Today</button>
+            <button type="button" style={link} onClick={() => pick('')}>
+              Clear
+            </button>
+            <button type="button" style={link} onClick={() => pick(today)}>
+              Today
+            </button>
           </div>
         </div>
       )}

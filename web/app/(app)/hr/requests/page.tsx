@@ -5,6 +5,7 @@ import { useAllRequests } from '@/components/useAllRequests'
 import { ReviewModal } from '@/components/ReviewModal'
 import { HrRequestDetail } from '@/components/HrRequestDetail'
 import { Pagination } from '@/components/Pagination'
+import { Select } from '@/components/Select'
 import { StatusPill } from '@/components/Pill'
 import { Avatar, EmptyState, ListSkeleton } from '@/components/ui'
 import { colorHex, leaveTypeLabel } from '@/lib/leave'
@@ -34,17 +35,6 @@ const SORTS: Array<{ key: string; label: string; by: LeaveRequestSortField; desc
   { key: 'created-asc', label: 'Submitted — oldest', by: 'CreatedAt', desc: false },
   { key: 'employee', label: 'Employee name', by: 'EmployeeName', desc: false },
 ]
-
-const selectStyle = {
-  border: '1px solid var(--border)',
-  background: 'var(--surface)',
-  color: 'var(--text2)',
-  borderRadius: 8,
-  padding: '5px 9px',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-}
 
 export default function HrRequestsPage() {
   const [filter, setFilter] = useState<'all' | LeaveRequestStatus>('all')
@@ -115,25 +105,23 @@ export default function HrRequestsPage() {
               </button>
             )
           })}
-          <select
+          <Select
+            compact
+            label="Leave type"
             value={type}
-            onChange={(e) => reset(setType)(e.target.value as LeaveTypeName | '')}
-            style={selectStyle}
-          >
-            <option value="">All types</option>
-            {typeOptions.map((t) => (
-              <option key={t.id} value={t.name}>
-                {leaveTypeLabel(t.name)}
-              </option>
-            ))}
-          </select>
-          <select value={sort} onChange={(e) => reset(setSort)(e.target.value)} style={selectStyle}>
-            {SORTS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => reset(setType)(v as LeaveTypeName | '')}
+            options={[
+              { value: '', label: 'All types' },
+              ...typeOptions.map((t) => ({ value: t.name, label: leaveTypeLabel(t.name) })),
+            ]}
+          />
+          <Select
+            compact
+            label="Sort by"
+            value={sort}
+            onChange={reset(setSort)}
+            options={SORTS.map((o) => ({ value: o.key, label: o.label }))}
+          />
         </div>
       </div>
 
@@ -159,16 +147,11 @@ export default function HrRequestsPage() {
                   cursor: 'pointer',
                 }}
               >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(140px,1fr) 104px 168px 40px 88px 66px',
-                    alignItems: 'center',
-                    gap: 12,
-                    fontSize: 13.5,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                <div className="tbl-row row-hrq" style={{ fontSize: 13.5 }}>
+                  <div
+                    className="c-who"
+                    style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}
+                  >
                     <Avatar text={initialsFromName(r.employeeName)} />
                     <span
                       style={{
@@ -182,6 +165,7 @@ export default function HrRequestsPage() {
                     </span>
                   </div>
                   <span
+                    className="c-type"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -201,16 +185,22 @@ export default function HrRequestsPage() {
                     />
                     {leaveTypeLabel(r.leaveTypeName)}
                   </span>
-                  <span style={{ color: 'var(--text2)', whiteSpace: 'nowrap' }}>
+                  <span className="c-range" style={{ color: 'var(--text2)', whiteSpace: 'nowrap' }}>
                     {range(r.startDate, r.endDate)}
                   </span>
-                  <span style={{ color: 'var(--text3)', fontSize: 12.5, whiteSpace: 'nowrap' }}>
+                  <span
+                    className="c-days"
+                    style={{ color: 'var(--text3)', fontSize: 12.5, whiteSpace: 'nowrap' }}
+                  >
                     {r.workingDays}d
                   </span>
-                  <span style={{ justifySelf: 'start' }}>
+                  <span className="c-status">
                     <StatusPill status={r.status} />
                   </span>
-                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-start' }}>
+                  <div
+                    className="c-actions"
+                    style={{ display: 'flex', gap: 6, justifyContent: 'flex-start' }}
+                  >
                     {r.status === 'Pending' && (
                       <>
                         <button

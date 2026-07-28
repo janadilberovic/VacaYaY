@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Modal, ModalHeader } from './Modal'
 import { DatePicker } from './DatePicker'
+import { Select } from './Select'
 import { useToast } from '@/state/toast'
 import { employees } from '@/lib/endpoints'
 import { ApiError } from '@/lib/api'
@@ -16,7 +17,13 @@ interface Errors {
   form?: string
 }
 
-export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCreated: (e: EmployeeDto) => void }) {
+export function AddEmployeeModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: (e: EmployeeDto) => void
+}) {
   const { toast } = useToast()
   const [f, setF] = useState({
     firstName: '',
@@ -70,7 +77,9 @@ export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; 
       onCreated(res.employee)
       setTempPassword(res.tempPassword)
     } catch (err) {
-      setErrs({ form: err instanceof ApiError ? (err.detail || err.message) : 'Could not create employee.' })
+      setErrs({
+        form: err instanceof ApiError ? err.detail || err.message : 'Could not create employee.',
+      })
       setBusy(false)
     }
   }
@@ -86,9 +95,16 @@ export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; 
     onClose()
   }
 
-  const input = (id: string, label: string, key: 'firstName' | 'lastName' | 'email' | 'department' | 'jobTitle', type = 'text') => (
+  const input = (
+    id: string,
+    label: string,
+    key: 'firstName' | 'lastName' | 'email' | 'department' | 'jobTitle',
+    type = 'text',
+  ) => (
     <div>
-      <label htmlFor={id} className="field-label">{label}</label>
+      <label htmlFor={id} className="field-label">
+        {label}
+      </label>
       <input
         id={id}
         type={type}
@@ -105,7 +121,9 @@ export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; 
     <Modal onClose={onClose} width={480}>
       {tempPassword ? (
         <div style={{ padding: '26px 26px 22px' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>One-time temporary password</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+            One-time temporary password
+          </div>
           <div style={{ color: 'var(--text2)', fontSize: 13, marginBottom: 18 }}>
             Share it securely — it’s shown only once. They’ll set their own password on first login.
           </div>
@@ -120,43 +138,86 @@ export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; 
               background: 'var(--surface2)',
             }}
           >
-            <div style={{ flex: 1, fontFamily: 'ui-monospace,monospace', fontSize: 17, fontWeight: 600, letterSpacing: '.04em' }}>{tempPassword}</div>
-            <button className="btn btn-ghost" style={{ padding: '7px 14px', fontSize: 12 }} onClick={copy}>
+            <div
+              style={{
+                flex: 1,
+                fontFamily: 'ui-monospace,monospace',
+                fontSize: 17,
+                fontWeight: 600,
+                letterSpacing: '.04em',
+              }}
+            >
+              {tempPassword}
+            </div>
+            <button
+              className="btn btn-ghost"
+              style={{ padding: '7px 14px', fontSize: 12 }}
+              onClick={copy}
+            >
               {copied ? 'Copied ✓' : 'Copy'}
             </button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-            <button className="btn btn-primary" style={{ padding: '9px 20px', fontSize: 13 }} onClick={finish}>Done</button>
+            <button
+              className="btn btn-primary"
+              style={{ padding: '9px 20px', fontSize: 13 }}
+              onClick={finish}
+            >
+              Done
+            </button>
           </div>
         </div>
       ) : (
         <>
           <ModalHeader title="Add employee" onClose={onClose} />
           <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="grid-2">
               {input('e-first', 'First name', 'firstName')}
               {input('e-last', 'Last name', 'lastName')}
             </div>
             {input('e-email', 'Email', 'email', 'email')}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="grid-2">
               {input('e-dept', 'Department', 'department')}
               {input('e-title', 'Job title', 'jobTitle')}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div className="grid-3">
               <div>
-                <label htmlFor="e-role" className="field-label">Role</label>
-                <select id="e-role" className="select" value={f.role} onChange={(e) => set('role', e.target.value as UserRole)}>
-                  <option value="Employee">Employee</option>
-                  <option value="HR">HR</option>
-                </select>
+                <label htmlFor="e-role" className="field-label">
+                  Role
+                </label>
+                <Select
+                  id="e-role"
+                  value={f.role}
+                  onChange={(v) => set('role', v as UserRole)}
+                  options={[
+                    { value: 'Employee', label: 'Employee' },
+                    { value: 'HR', label: 'HR' },
+                  ]}
+                />
               </div>
               <div>
-                <label htmlFor="e-hired" className="field-label">Hire date</label>
-                <DatePicker id="e-hired" value={f.hireDate} onChange={(iso) => set('hireDate', iso)} />
+                <label htmlFor="e-hired" className="field-label">
+                  Hire date
+                </label>
+                <DatePicker
+                  id="e-hired"
+                  value={f.hireDate}
+                  onChange={(iso) => set('hireDate', iso)}
+                />
               </div>
               <div>
-                <label htmlFor="e-bal" className="field-label">Balance</label>
-                <input id="e-bal" type="number" min={0} max={40} className="input" value={f.daysOff} onChange={(e) => set('daysOff', Number(e.target.value))} />
+                <label htmlFor="e-bal" className="field-label">
+                  Balance
+                </label>
+                <input
+                  id="e-bal"
+                  type="number"
+                  min={0}
+                  max={40}
+                  className="input"
+                  value={f.daysOff}
+                  onChange={(e) => set('daysOff', Number(e.target.value))}
+                />
               </div>
             </div>
             {errs.form && <div className="err">{errs.form}</div>}
@@ -164,12 +225,23 @@ export function AddEmployeeModal({ onClose, onCreated }: { onClose: () => void; 
           <div className="modal-foot">
             <button
               className="btn"
-              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text2)', padding: '9px 16px', fontSize: 13 }}
+              style={{
+                background: 'none',
+                border: '1px solid var(--border)',
+                color: 'var(--text2)',
+                padding: '9px 16px',
+                fontSize: 13,
+              }}
               onClick={onClose}
             >
               Cancel
             </button>
-            <button className="btn btn-primary" style={{ padding: '9px 20px', fontSize: 13 }} disabled={busy} onClick={create}>
+            <button
+              className="btn btn-primary"
+              style={{ padding: '9px 20px', fontSize: 13 }}
+              disabled={busy}
+              onClick={create}
+            >
               {busy ? 'Creating…' : 'Create employee'}
             </button>
           </div>

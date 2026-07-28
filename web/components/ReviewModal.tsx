@@ -32,7 +32,9 @@ export function ReviewModal({ req, action, onClose, onReviewed }: Props) {
     setError('')
     try {
       const note = comment.trim() || null
-      const updated = approving ? await leaveRequests.approve(req.id, note) : await leaveRequests.reject(req.id, note)
+      const updated = approving
+        ? await leaveRequests.approve(req.id, note)
+        : await leaveRequests.reject(req.id, note)
       toast(approving ? 'Request approved.' : 'Request rejected.')
       onReviewed(updated)
       refreshUser()
@@ -44,8 +46,8 @@ export function ReviewModal({ req, action, onClose, onReviewed }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" style={{ alignItems: 'center', padding: 20, zIndex: 60 }}>
-      <div className="modal-card" style={{ width: 420, padding: '22px 24px' }}>
+    <div className="modal-backdrop center" style={{ zIndex: 60 }}>
+      <div className="modal-card" style={{ width: '100%', maxWidth: 420, padding: '22px 24px' }}>
         <div style={{ fontSize: 15.5, fontWeight: 700, marginBottom: 6 }}>{title}</div>
         <div style={{ color: 'var(--text2)', fontSize: 13.5, marginBottom: 16 }}>{desc}</div>
         <label htmlFor="rv-comment" className="field-label">
@@ -59,18 +61,33 @@ export function ReviewModal({ req, action, onClose, onReviewed }: Props) {
           onChange={(e) => setComment(e.target.value)}
           placeholder="Optional note for the employee…"
         />
-        {error && <div className="err" style={{ marginTop: 8 }}>{error}</div>}
+        {error && (
+          <div className="err" style={{ marginTop: 8 }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
           <button
             className="btn"
-            style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text2)', padding: '8px 14px', fontSize: 13 }}
+            style={{
+              background: 'none',
+              border: '1px solid var(--border)',
+              color: 'var(--text2)',
+              padding: '8px 14px',
+              fontSize: 13,
+            }}
             onClick={onClose}
           >
             Cancel
           </button>
           <button
             className="btn"
-            style={{ background: approving ? 'var(--accent)' : 'var(--pill-rejected-fg)', color: '#fff', padding: '8px 16px', fontSize: 13 }}
+            style={{
+              background: approving ? 'var(--accent)' : 'var(--pill-rejected-fg)',
+              color: '#fff',
+              padding: '8px 16px',
+              fontSize: 13,
+            }}
             disabled={busy}
             onClick={confirm}
           >
