@@ -103,6 +103,18 @@ export interface CreateEmployeeRequest {
   daysOff: number
 }
 
+// Email, role and hire date are immutable on the API and are not part of the update.
+export interface UpdateEmployeeRequest {
+  firstName: string
+  lastName: string
+  department: string | null
+  jobTitle: string | null
+  employmentStartDate: string | null
+  employmentEndDate: string | null
+  daysOff: number
+  isActive: boolean
+}
+
 export interface CreateEmployeeResponse {
   employee: EmployeeDto
   tempPassword: string
