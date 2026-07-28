@@ -30,3 +30,31 @@ test('the API refuses an HR-only endpoint for an employee', async ({ page }) => 
   const mine = await page.request.get('/api/leave-requests/mine', { headers })
   expect(mine.ok()).toBeTruthy()
 })
+
+// Editing an employee or a leave type is HR-only. Authorization runs before model binding,
+// so a 403 here also means nothing was written.
+test('the API refuses employee and leave-type edits for an employee', async ({ page }) => {
+  await page.goto('/dashboard')
+  const headers = await authHeaders(page)
+
+  const employee = await page.request.put('/api/employees/1', {
+    headers,
+    data: {
+      firstName: 'Nope',
+      lastName: 'Nope',
+      department: null,
+      jobTitle: null,
+      employmentStartDate: null,
+      employmentEndDate: null,
+      daysOff: 0,
+      isActive: true,
+    },
+  })
+  expect(employee.status()).toBe(403)
+
+  const leaveType = await page.request.put('/api/leave-types/1', {
+    headers,
+    form: { IsPaid: 'false', CountsAgainstBalance: 'false' },
+  })
+  expect(leaveType.status()).toBe(403)
+})

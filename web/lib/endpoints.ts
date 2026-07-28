@@ -15,6 +15,7 @@ import type {
   LeaveTypeDto,
   LegacyEmployeeRosterItem,
   PagedResult,
+  UpdateEmployeeRequest,
   UpdateLeaveTypeRequest,
 } from './types'
 
@@ -71,6 +72,8 @@ export const employees = {
   },
   me: () => api.get<EmployeeDto>('/employees/me'),
   create: (body: CreateEmployeeRequest) => api.post<CreateEmployeeResponse>('/employees', body),
+  update: (id: number, body: UpdateEmployeeRequest) =>
+    api.put<EmployeeDto>(`/employees/${id}`, body),
   archive: (id: number) => api.del<void>(`/employees/${id}`),
   restore: (id: number) => api.post<EmployeeDto>(`/employees/${id}/restore`),
   legacyRoster: () => api.get<LegacyEmployeeRosterItem[]>('/employees/legacy'),

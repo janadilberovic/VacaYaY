@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
+import { EditEmployeeModal } from '@/components/EditEmployeeModal'
 import { ImportLegacyModal } from '@/components/ImportLegacyModal'
 import { ConfirmDialog, type ConfirmSpec } from '@/components/ConfirmDialog'
 import { Pagination } from '@/components/Pagination'
@@ -29,7 +30,27 @@ function StatusPill({ active }: { active: boolean }) {
   )
 }
 
-function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
+const ACTIONS_WIDTH = 126
+
+const actionBtn = {
+  background: 'none',
+  border: '1px solid var(--border)',
+  color: 'var(--text2)',
+  borderRadius: 7,
+  padding: '5px 0',
+  fontSize: 11.5,
+}
+
+function Row({
+  e,
+  onEdit,
+  onAct,
+}: {
+  e: EmployeeDto
+  /** Absent for archived rows — the service reads through the soft-delete filter, so editing one 404s. */
+  onEdit?: () => void
+  onAct: () => void
+}) {
   return (
     <div
       className="tbl-row row-emp"
@@ -76,21 +97,19 @@ function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
       <div className="c-status">
         <StatusPill active={e.isActive} />
       </div>
-      <button
-        onClick={onAct}
-        className="btn c-action"
-        style={{
-          width: 64,
-          background: 'none',
-          border: '1px solid var(--border)',
-          color: 'var(--text2)',
-          borderRadius: 7,
-          padding: '5px 0',
-          fontSize: 11.5,
-        }}
+      <div
+        className="c-action"
+        style={{ display: 'flex', gap: 6, width: ACTIONS_WIDTH, justifyContent: 'flex-end' }}
       >
-        {e.isActive ? 'Archive' : 'Restore'}
-      </button>
+        {onEdit && (
+          <button onClick={onEdit} className="btn" style={{ ...actionBtn, width: 54 }}>
+            Edit
+          </button>
+        )}
+        <button onClick={onAct} className="btn" style={{ ...actionBtn, width: 66 }}>
+          {e.isActive ? 'Archive' : 'Restore'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -101,6 +120,7 @@ export default function EmployeesPage() {
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [editing, setEditing] = useState<EmployeeDto | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null)
 
@@ -203,10 +223,15 @@ export default function EmployeesPage() {
               {h}
             </div>
           ))}
-          <div style={{ width: 64 }} />
+          <div style={{ width: ACTIONS_WIDTH }} />
         </div>
         {rows.map((e) => (
-          <Row key={e.id} e={e} onAct={() => (archived ? restore(e) : askArchive(e))} />
+          <Row
+            key={e.id}
+            e={e}
+            onEdit={archived ? undefined : () => setEditing(e)}
+            onAct={() => (archived ? restore(e) : askArchive(e))}
+          />
         ))}
         {rows.length === 0 && (
           <div style={{ padding: '18px', color: 'var(--text3)', fontSize: 13 }}>
@@ -225,6 +250,14 @@ export default function EmployeesPage() {
 
       {showImport && <ImportLegacyModal onClose={() => setShowImport(false)} onImported={reload} />}
       {showAdd && <AddEmployeeModal onClose={() => setShowAdd(false)} onCreated={reload} />}
+      {editing && (
+        // The list is ordered by name, so a rename can move the row — refetch instead of patching.
+        <EditEmployeeModal
+          employee={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => load()}
+        />
+      )}
       {confirm && <ConfirmDialog spec={confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AddLeaveTypeModal } from '@/components/AddLeaveTypeModal'
+import { EditLeaveTypeModal } from '@/components/EditLeaveTypeModal'
 import { ConfirmDialog, type ConfirmSpec } from '@/components/ConfirmDialog'
 import { Badge } from '@/components/Pill'
 import { useToast } from '@/state/toast'
@@ -9,7 +10,29 @@ import { leaveTypes as leaveTypesApi } from '@/lib/endpoints'
 import { colorHex, leaveTypeLabel } from '@/lib/leave'
 import type { LeaveTypeDto, LeaveTypeName } from '@/lib/types'
 
-function Row({ lt, active, onAct }: { lt: LeaveTypeDto; active: boolean; onAct: () => void }) {
+const ACTIONS_WIDTH = 126
+
+const actionBtn = {
+  background: 'none',
+  border: '1px solid var(--border)',
+  color: 'var(--text2)',
+  borderRadius: 7,
+  padding: '5px 0',
+  fontSize: 11.5,
+}
+
+function Row({
+  lt,
+  active,
+  onEdit,
+  onAct,
+}: {
+  lt: LeaveTypeDto
+  active: boolean
+  /** Absent for archived rows — the service reads through the soft-delete filter, so editing one 404s. */
+  onEdit?: () => void
+  onAct: () => void
+}) {
   return (
     <div
       className="tbl-row row-lt"
@@ -51,21 +74,19 @@ function Row({ lt, active, onAct }: { lt: LeaveTypeDto; active: boolean; onAct: 
           {active ? 'Active' : 'Archived'}
         </span>
       </div>
-      <button
-        onClick={onAct}
-        className="btn c-action"
-        style={{
-          width: 64,
-          background: 'none',
-          border: '1px solid var(--border)',
-          color: 'var(--text2)',
-          borderRadius: 7,
-          padding: '5px 0',
-          fontSize: 11.5,
-        }}
+      <div
+        className="c-action"
+        style={{ display: 'flex', gap: 6, width: ACTIONS_WIDTH, justifyContent: 'flex-end' }}
       >
-        {active ? 'Archive' : 'Restore'}
-      </button>
+        {onEdit && (
+          <button onClick={onEdit} className="btn" style={{ ...actionBtn, width: 54 }}>
+            Edit
+          </button>
+        )}
+        <button onClick={onAct} className="btn" style={{ ...actionBtn, width: 66 }}>
+          {active ? 'Archive' : 'Restore'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -75,6 +96,7 @@ export default function LeaveTypesPage() {
   const [active, setActive] = useState<LeaveTypeDto[]>([])
   const [archived, setArchived] = useState<LeaveTypeDto[]>([])
   const [showAdd, setShowAdd] = useState(false)
+  const [editing, setEditing] = useState<LeaveTypeDto | null>(null)
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null)
 
   useEffect(() => {
@@ -136,10 +158,16 @@ export default function LeaveTypesPage() {
               {h}
             </div>
           ))}
-          <div style={{ width: 64 }} />
+          <div style={{ width: ACTIONS_WIDTH }} />
         </div>
         {active.map((lt) => (
-          <Row key={lt.id} lt={lt} active onAct={() => askArchive(lt)} />
+          <Row
+            key={lt.id}
+            lt={lt}
+            active
+            onEdit={() => setEditing(lt)}
+            onAct={() => askArchive(lt)}
+          />
         ))}
       </div>
 
@@ -166,6 +194,13 @@ export default function LeaveTypesPage() {
           onCreated={(t) =>
             setActive((l) => [...l, t].sort((a, b) => a.name.localeCompare(b.name)))
           }
+        />
+      )}
+      {editing && (
+        <EditLeaveTypeModal
+          leaveType={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(t) => setActive((l) => l.map((x) => (x.id === t.id ? t : x)))}
         />
       )}
       {confirm && <ConfirmDialog spec={confirm} onCancel={() => setConfirm(null)} />}
