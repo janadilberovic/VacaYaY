@@ -8,8 +8,6 @@ import { ApiError } from '@/lib/api'
 import { fmt } from '@/lib/dates'
 import type { EmployeeDto, LegacyEmployeeRosterItem } from '@/lib/types'
 
-const COLS = '28px 1.4fr 1.6fr 1fr .8fr'
-
 function Row({
   e,
   checked,
@@ -21,11 +19,8 @@ function Row({
 }) {
   return (
     <label
+      className="tbl-row row-imp"
       style={{
-        display: 'grid',
-        gridTemplateColumns: COLS,
-        gap: 12,
-        alignItems: 'center',
         padding: '10px 24px',
         borderBottom: '1px solid var(--border)',
         fontSize: 13,
@@ -33,8 +28,15 @@ function Row({
         cursor: e.alreadyImported ? 'default' : 'pointer',
       }}
     >
-      <input type="checkbox" checked={checked} disabled={e.alreadyImported} onChange={onToggle} />
+      <input
+        className="c-check"
+        type="checkbox"
+        checked={checked}
+        disabled={e.alreadyImported}
+        onChange={onToggle}
+      />
       <span
+        className="c-name"
         style={{
           fontWeight: 600,
           whiteSpace: 'nowrap',
@@ -45,6 +47,7 @@ function Row({
         {e.firstName} {e.lastName}
       </span>
       <span
+        className="c-email"
         style={{
           color: 'var(--text2)',
           whiteSpace: 'nowrap',
@@ -54,17 +57,19 @@ function Row({
       >
         {e.email}
       </span>
-      <span style={{ color: 'var(--text2)' }}>{e.department || '—'}</span>
-      {e.alreadyImported ? (
-        <span
-          className="pill"
-          style={{ fontSize: 10.5, background: 'var(--surface2)', color: 'var(--text3)' }}
-        >
-          Already imported
-        </span>
-      ) : (
-        <span style={{ color: 'var(--text3)' }}>{e.hiredOn ? fmt(e.hiredOn, false) : '—'}</span>
-      )}
+      <span className="c-meta sub-cells">
+        <span style={{ color: 'var(--text2)' }}>{e.department || '—'}</span>
+        {e.alreadyImported ? (
+          <span
+            className="pill"
+            style={{ fontSize: 10.5, background: 'var(--surface2)', color: 'var(--text3)' }}
+          >
+            Already imported
+          </span>
+        ) : (
+          <span style={{ color: 'var(--text3)' }}>{e.hiredOn ? fmt(e.hiredOn, false) : '—'}</span>
+        )}
+      </span>
     </label>
   )
 }
@@ -162,24 +167,20 @@ export function ImportLegacyModal({
       ) : (
         <>
           <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: COLS,
-              gap: 12,
-              alignItems: 'center',
-              padding: '14px 24px 10px',
-              borderBottom: '1px solid var(--border)',
-            }}
+            className="tbl-row row-imp"
+            style={{ padding: '14px 24px 10px', borderBottom: '1px solid var(--border)' }}
           >
             <input
+              className="c-check"
               type="checkbox"
               aria-label="Select all importable employees"
               checked={allSelected}
               disabled={selectable.length === 0}
               onChange={toggleAll}
             />
+            <div className="section-label only-narrow">Select all</div>
             {['Name', 'Email', 'Department', 'Hired'].map((h) => (
-              <div key={h} className="section-label" style={{ fontSize: 11 }}>
+              <div key={h} className="section-label hide-narrow" style={{ fontSize: 11 }}>
                 {h}
               </div>
             ))}

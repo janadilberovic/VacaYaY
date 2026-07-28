@@ -12,15 +12,12 @@ interface Props {
 /** Backdrop + centered card. Clicking the backdrop closes; clicks inside don't. */
 export function Modal({ onClose, width, align = 'top', children }: Props) {
   return (
-    <div
-      className="modal-backdrop"
-      style={{
-        alignItems: align === 'center' ? 'center' : 'flex-start',
-        padding: align === 'center' ? 20 : '8vh 20px',
-      }}
-      onClick={onClose}
-    >
-      <div className="modal-card" style={{ width }} onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-backdrop ${align}`} onClick={onClose}>
+      <div
+        className="modal-card"
+        style={{ width: '100%', maxWidth: width }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {children}
       </div>
     </div>

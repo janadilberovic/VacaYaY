@@ -28,6 +28,8 @@ export function Pagination({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 10,
         marginTop: 14,
       }}
     >

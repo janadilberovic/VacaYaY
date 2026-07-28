@@ -28,17 +28,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ toast }}>
       {children}
-      <div
-        style={{
-          position: 'fixed',
-          right: 20,
-          bottom: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          zIndex: 100,
-        }}
-      >
+      <div className="toasts">
         {toasts.map((t) => (
           <div
             key={t.id}
@@ -63,7 +53,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 height: 8,
                 borderRadius: '50%',
                 flexShrink: 0,
-                background: t.kind === 'success' ? 'var(--pill-approved-fg)' : 'var(--pill-rejected-fg)',
+                background:
+                  t.kind === 'success' ? 'var(--pill-approved-fg)' : 'var(--pill-rejected-fg)',
               }}
             />
             {t.msg}

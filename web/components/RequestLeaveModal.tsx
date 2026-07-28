@@ -155,7 +155,7 @@ export function RequestLeaveModal() {
       <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div>
           <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 8 }}>Leave type</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div className="grid-2" style={{ gap: 8 }}>
             {types.map((t) => {
               const active = typeId === t.id
               const badge = `${t.isPaid ? 'Paid' : 'Unpaid'}${t.countsAgainstBalance ? ' · Balance' : ''}`

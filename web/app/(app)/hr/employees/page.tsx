@@ -13,7 +13,6 @@ import { fmt } from '@/lib/dates'
 import type { EmployeeDto, PagedResult } from '@/lib/types'
 
 const PER_PAGE = 8
-const COLS = '1.5fr 1.7fr 1fr .8fr .7fr .8fr auto'
 
 function StatusPill({ active }: { active: boolean }) {
   return (
@@ -33,18 +32,18 @@ function StatusPill({ active }: { active: boolean }) {
 function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
   return (
     <div
+      className="tbl-row row-emp"
       style={{
-        display: 'grid',
-        gridTemplateColumns: COLS,
-        gap: 12,
-        alignItems: 'center',
         padding: '12px 18px',
         borderBottom: '1px solid var(--border)',
         fontSize: 13,
         opacity: e.isActive ? 1 : 0.6,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+      <div
+        className="c-name"
+        style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}
+      >
         <Avatar text={initials(e.firstName, e.lastName)} />
         <span
           style={{
@@ -59,6 +58,7 @@ function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
         </span>
       </div>
       <div
+        className="c-email"
         style={{
           color: 'var(--text2)',
           whiteSpace: 'nowrap',
@@ -68,15 +68,17 @@ function Row({ e, onAct }: { e: EmployeeDto; onAct: () => void }) {
       >
         {e.email}
       </div>
-      <div style={{ color: 'var(--text2)' }}>{e.department || '—'}</div>
-      <div style={{ color: 'var(--text2)' }}>{e.hireDate ? fmt(e.hireDate, false) : '—'}</div>
-      <div style={{ color: 'var(--text2)' }}>{e.daysOff} days</div>
-      <div>
+      <div className="c-meta sub-cells" style={{ color: 'var(--text2)' }}>
+        <div>{e.department || '—'}</div>
+        <div>{e.hireDate ? fmt(e.hireDate, false) : '—'}</div>
+        <div>{e.daysOff} days</div>
+      </div>
+      <div className="c-status">
         <StatusPill active={e.isActive} />
       </div>
       <button
         onClick={onAct}
-        className="btn"
+        className="btn c-action"
         style={{
           width: 64,
           background: 'none',
@@ -163,7 +165,7 @@ export default function EmployeesPage() {
     <div style={{ animation: 'fade .25s' }}>
       <div className="page-head">
         <div className="page-h">Employees</div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button
             className="btn"
             style={{
@@ -193,14 +195,8 @@ export default function EmployeesPage() {
 
       <div className="card" style={{ overflow: 'hidden' }}>
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: COLS,
-            gap: 12,
-            alignItems: 'center',
-            padding: '10px 18px',
-            borderBottom: '1px solid var(--border)',
-          }}
+          className="tbl-head row-emp"
+          style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)' }}
         >
           {['Name', 'Email', 'Department', 'Hired', 'Balance', 'Status'].map((h) => (
             <div key={h} className="section-label" style={{ fontSize: 11 }}>

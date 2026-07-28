@@ -161,9 +161,7 @@ export default function HrDashboardPage() {
         HR dashboard
       </div>
 
-      <div
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 32 }}
-      >
+      <div className="grid-stats" style={{ marginBottom: 32 }}>
         <StatCard
           label="Pending requests"
           value={summary?.countByStatus.Pending ?? 0}
@@ -173,7 +171,7 @@ export default function HrDashboardPage() {
         <StatCard label="Archived accounts" value={archived} color="var(--text3)" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14, marginBottom: 32 }}>
+      <div className="grid-charts" style={{ marginBottom: 32 }}>
         <div className="card" style={{ padding: 20 }}>
           <div style={{ fontSize: 12.5, fontWeight: 650, marginBottom: 16 }}>
             Leave days by type
@@ -224,12 +222,9 @@ export default function HrDashboardPage() {
             return (
               <div
                 key={r.id}
+                className="tbl-row row-hrp"
                 onClick={() => setDetail(r)}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1.4fr 130px 1fr auto auto',
-                  alignItems: 'center',
-                  gap: 14,
                   padding: '13px 16px',
                   background: 'var(--surface)',
                   border: '1px solid var(--border)',
@@ -239,7 +234,10 @@ export default function HrDashboardPage() {
                   cursor: 'pointer',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                <div
+                  className="c-who"
+                  style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}
+                >
                   <Avatar text={initialsFromName(r.employeeName)} />
                   <span
                     style={{
@@ -252,7 +250,10 @@ export default function HrDashboardPage() {
                     {r.employeeName}
                   </span>
                 </div>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600 }}>
+                <span
+                  className="c-type"
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600 }}
+                >
                   <span
                     style={{
                       width: 8,
@@ -264,7 +265,7 @@ export default function HrDashboardPage() {
                   />
                   {leaveTypeLabel(r.leaveTypeName)}
                 </span>
-                <span style={{ color: 'var(--text2)' }}>
+                <span className="c-range" style={{ color: 'var(--text2)' }}>
                   {range(r.startDate, r.endDate)} ·{' '}
                   <span style={{ color: 'var(--text3)', fontSize: 12.5 }}>
                     {r.workingDays} {workingDaysNoun(r.workingDays)}
